@@ -1,0 +1,32 @@
+[package]
+name = "pentagame"
+version = "0.1.0"
+authors = ["Cobalt <Chaosthe0rie@protonmail.com>"]
+edition = "2018"
+
+[dependencies]
+actix-web = { version = "3", default-features = false, features = [
+    "compress",
+    "secure-cookies",
+] }
+actix-files = "0.4.0"
+askama = { version = "0.10", default-features = false, features = [
+    "with-actix-web",
+    "mime",
+    "mime_guess",
+] }
+askama_actix = "0.11.1"
+diesel = { version = "1.4.5", features = [
+    "postgres",
+    "r2d2",
+    "uuid",
+    "chrono"
+] }
+r2d2 = "0.8.9"
+serde = { version = "1.0", features = ["derive"], default-features = false }
+toml = "0.5.7"
+sodiumoxide = "0.2.6"
+uuid = { version = ">=0.2.0, <0.7.0", features = ["serde", "v4"] }
+clap = "2.33.3"
+derive_more = "0.99.11"
+chrono = "0.4.19"

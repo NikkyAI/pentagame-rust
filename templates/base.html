@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pentagame</title>
+
+    <!-- CSS -->
+    <link href="/static/css/app.css" rel="stylesheet" />
+
+    <!-- Favicon -->
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/images/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/images/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/images/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/images/site.webmanifest" />
+    <link
+      rel="mask-icon"
+      href="/static/images/safari-pinned-tab.svg"
+      color="#212121"
+    />
+    <link rel="shortcut icon" href="/static/images/favicon.ico" />
+    <meta name="apple-mobile-web-app-title" content="Pentagame" />
+    <meta name="application-name" content="Pentagame" />
+    <meta name="msapplication-TileColor" content="#ffffff" />
+    <meta
+      name="msapplication-TileImage"
+      content="/static/images/mstile-144x144.png"
+    />
+    <meta
+      name="msapplication-config"
+      content="/static/images/browserconfig.xml"
+    />
+    <meta name="theme-color" content="#ffffff" />
+
+    <!-- Meta -->
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <!-- Add based on FQDomain Name <link rel="canonical" href="https://penta-game.github.io/pentagraph/" /> -->
+    <meta name="theme-color" content="#212121" />
+    <meta property="og:image" content="/static/images/brand.png" />
+    <meta property="og:site_name" content="Pentagame Online" />
+    <meta property="og:type" content="text/html" />
+    <meta name="description" content="Pentagame Online client & Docs" />
+    <meta property="og:description" content="Pentagame Online client & Docs" />
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+          <img
+            src="/static/images/brand.svg"
+            height="30"
+            alt="Pentagame brand"
+            loading="lazy"
+          />
+          Pentagame
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-toggle="collapse"
+          data-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              <a
+                class="nav-link"
+                aria-current="page"
+                href="https://github.com/Penta-Game/pentagame"
+              >
+                Code
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" aria-current="page" href="/game/"> Game </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" aria-current="page" href="/content/todo/">
+                TODO
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="container-fluid bg-light" id="content">
+      <div class="container py-4">
+        {% block content -%} {% endblock content -%}
+      </div>
+    </div>
+    <!-- #Content -->
+
+    <!-- Footer -->
+    <footer
+      id="footer"
+      class="page-footer mt-3 font-small bg-dark text-white w-100"
+    >
+      <!-- Copyright -->
+      <div class="footer-copyright text-center py-3">
+        © 2020 Copyright
+        <a href="https://github.com/Penta-Game/pentagame" class="copyright">
+          GPLv3.0 or later
+        </a>
+        @
+        <a href="https://cobalt.rocks/pages/contact/" class="copyright">
+          Cobalt
+        </a>
+        <span id="footer-advanced"></span>
+      </div>
+      <!-- #Copyright -->
+    </footer>
+    <!-- #Footer -->
+
+    <!-- JS -->
+    <script src="/static/node_modules/mdb-ui-kit/js/mdb.min.js"></script>
+    <script src="/static/js/dist/main.js"></script>
+  </body>
+</html>

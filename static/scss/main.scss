@@ -1,0 +1,23 @@
+/*
+Main.scss Frontend stylsheet for oxidized-cms 
+@license GPL v3.0 or newer @ Cobalt <https://cobalt.rocks>
+*/
+
+@import 'mdb-ui-kit/src/scss/mdb.free.scss';
+@import 'variables.scss';
+
+#content {
+  min-height: 100vh;
+}
+.copyright {
+  background-color: $dark;
+}
+
+a {
+  color: $light;
+  &:hover,
+  &:active,
+  &:focus {
+    color: darken($light, 50);
+  }
+}
