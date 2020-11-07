@@ -1,0 +1,10 @@
+[server]
+ip = 'localhost'
+port = 8080
+
+[database]
+user = 'pentagame'
+password = 'pentagame'
+host = 'localhost'
+port = 5432
+database = 'pentagame'

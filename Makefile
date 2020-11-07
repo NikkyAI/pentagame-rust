@@ -32,3 +32,8 @@ check:
 dev-build:
 	cargo b 
 	cd static/ && yarn run compile
+ci-build:
+	cp ci/ci.toml pentagame.toml
+	cargo build --verbose
+ci-test:
+	cargo check --verbose
