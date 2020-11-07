@@ -1,0 +1,31 @@
+name: Rust
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: Harmon758/postgresql-action@v1.0.0
+        with:
+          postgresql db: pentagame
+          postgresql user: pentagame
+          postgresql password: pentagame
+      - uses: actions/checkout@v2
+      - name: Setup
+        run: |
+          make setup
+          make db-setup
+      - name: Build
+        run: make ci-build
+      - name: Run tests
+        run: make ci-test
