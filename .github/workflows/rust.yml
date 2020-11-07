@@ -39,7 +39,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Setup
         run: |
-          cp ci/ci.toml pentagame.toml
+          cp .github/ci/ci.toml pentagame.toml
           cargo install diesel_cli --features postgres
           make setup
           make db-setup
