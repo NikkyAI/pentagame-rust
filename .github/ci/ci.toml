@@ -8,3 +8,7 @@ password = 'pentagame'
 host = 'localhost'
 port = 5432
 database = 'pentagame'
+
+[auth]
+file = 'secret.key'
+session = 24

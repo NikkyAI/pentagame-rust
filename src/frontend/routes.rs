@@ -65,6 +65,10 @@ pub async fn get_index() -> UserResponse {
     UserError::wrap_template(templates::IndexTemplate {}.into_response())
 }
 
+pub async fn get_rules() -> UserResponse {
+    UserError::wrap_template(templates::RulesTemplate {}.into_response())
+}
+
 pub async fn get_error_404() -> UserResponse {
     UserError::wrap_template(
         templates::ErrorTemplate {

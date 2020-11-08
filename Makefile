@@ -21,14 +21,15 @@ db-reset:
 serve:
 	cargo b --release 
 	./target/release/pentagame serve
-generate:
-	cargo b --release 
-	./target/release/pentagame generate
 build:
 	cargo b --release 
 	cd static/ &&  yarn run compile
-check:
-	cargo check --release 
+generate:
+	cargo b --release 
+	./target/release/pentagame generate
+dev-generate:
+	cargo b
+	./target/debug/pentagame generate
 dev-build:
 	cargo b 
 	cd static/ && yarn run compile

@@ -1,0 +1,17 @@
+@import 'variables.scss';
+
+.text-darker {
+  color: darken($dark, 50);
+}
+
+.copyright {
+  background-color: $dark;
+}
+
+a {
+  color: $light;
+  &:hover,
+  &:focus {
+    color: darken($light, 50);
+  }
+}

@@ -5,6 +5,10 @@ use askama_actix::Template;
 pub struct IndexTemplate {}
 
 #[derive(Template)]
+#[template(path = "rules.html")]
+pub struct RulesTemplate {}
+
+#[derive(Template)]
 #[template(path = "error.html")]
 pub struct ErrorTemplate {
     pub message: String,

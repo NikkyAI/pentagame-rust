@@ -1,12 +1,122 @@
 {% extends "base.html" %} {% block content %}
 
-<div class="card">
-  <div class="card-header">
-    <h5>Pentagame</h5>
+<div class="row my-5">
+  <div class="col-md-6">
+    <h1>Welcome to Pentagame</h1>
+    <p>
+      Pentagame is an abstract strategy game without chance element. It is
+      played on a pentagram star that shows 100 round stops. The 5 corners and
+      the 5 crossings in the pentagram are colored (white, blue, red, green,
+      yellow). It can be played with 2, 3 or 4 players. It looks a bit like a
+      pentagonal ludo, but it is truly different. For example, there is no
+      chance and pieces don't get beaten. Instead, it is all about moving,
+      swapping, about paths and about areas. Every player plays 5 pieces of one
+      shape, e.g. cats against pawns or whatever …
+    </p>
+    <div class="text-center">
+      <div class="btn-group justify-content-center btn-group-lg">
+        <a href="/rules" class="btn btn-lg btn-dark">
+          <i class="fas file-icon"></i>
+          Read more
+        </a>
+        <a href="/game/" class="btn btn-lg btn-dark">
+          <i class="fas game-icon"></i>
+          Play now
+        </a>
+      </div>
+    </div>
   </div>
-  <div class="card-body">
-    <div class="card-text">What an awesome card</div>
+  <div class="col-md-6">
+    <img class="w-100" height="100%" src="/static/images/brand.svg" />
   </div>
 </div>
 
-{% endblock %}
+<div class="container-fluid mt-4">
+  <div class="row justify-content-between text-center text-white">
+    <div class="col-md-5 flex-fill p-3 m-1 bg-success">
+      <i class="fas fas-lg mb-1 branch-icon"></i>
+
+      <h3>Rules</h3>
+
+      <p>
+        The rules of pentagame are open and avalaible in multiple languages on
+        github. There's even an illustrated version. If you want you can even
+        contribute yourself or discuss with others!
+      </p>
+
+      <div class="btn-group">
+        <a
+          class="btn btn-success"
+          href="https://github.com/penta-jan/Illustrated-Rules"
+        >
+          <i class="fas image-icon"></i>
+          Illustrated Rules
+        </a>
+        <a
+          class="btn btn-success"
+          href="https://github.com/penta-jan/Pentagame-Rulesheets"
+        >
+          <i class="fas file-icon"></i>
+          Rules
+        </a>
+      </div>
+    </div>
+
+    <div class="col-md-5 flex-fill m-1 p-3 bg-danger">
+      <i class="fas fas-lg mb-1 book-icon"></i>
+
+      <h3>Book</h3>
+
+      <p>
+        A book by Jan Suchanek about pentagame and it's background is being
+        written at the moment. It will contain extended research on pentagame on
+        the math behind pentagame but will also show the background of the
+        design and it's origins. An original book by the original designer!
+      </p>
+
+      <a
+        href="https://github.com/penta-jan/pentagame/blob/master/Pentagame__The_Book.pdf"
+        class="btn btn-danger"
+      >
+        <i class="fas pen-icon"></i>
+        Read the excerpt
+      </a>
+    </div>
+  </div>
+  <div class="row justify-content-between text-white text-center">
+    <div class="col-md-5 flex-fill m-1 p-3 bg-dark">
+      <i class="fas fas-lg code-icon mb-1"></i>
+
+      <h3>Development</h3>
+
+      <p>
+        The community around pentagame is active and provides software libraries
+        for you. You can create your own virtual pentagame or do research with
+        it.
+      </p>
+
+      <a href="https://github.com/penta-game/" class="btn btn-dark">
+        <i class="fas code-2-icon"></i>
+        Visit our Organization
+      </a>
+    </div>
+    <div class="col-md-5 flex-fill p-3 m-1 bg-info">
+      <i class="fas fas-lg crown-icon"></i>
+
+      <h3>Tournaments</h3>
+
+      <p>
+        You can participate in tournaments at c-base berlin. At events like the
+        CCC are tournaments too, where you xan even win your own pentagame
+        related prize. The latest winner was even interviewed!
+      </p>
+
+      <a href="https://youtu.be/pSqBq2sewgY" class="btn btn-info">
+        <i class="fas video-icon"></i>
+        Watch on YouTube
+      </a>
+    </div>
+  </div>
+
+  {% endblock %}
+</div>
