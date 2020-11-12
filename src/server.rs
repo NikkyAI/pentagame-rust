@@ -71,6 +71,7 @@ pub async fn main(config_raw_path: String) -> Result<()> {
                     .show_files_listing()
                     .use_last_modified(true),
             )
+            .service(web::scope("/content").route("/rules", web::get().to(routes::get_rules)))
             .route("/", web::get().to(routes::get_index))
             .default_service(web::route().to(routes::get_error_404))
     })
