@@ -1,6 +1,40 @@
 # Pentagame - Online
 
-Pentagame online client
+Pentagame online client & server
+
+## Setup
+
+You need [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html), [yarn](https://yarnpkg.com/getting-started/install) and the [diesel_cli](https://lib.rs/crates/diesel_cli) (only feature: `postgres` is required) as well as [GNU make](https://www.gnu.org/software/make/). Only bash is supported at the moment.
+
+Start the setup process with cloning the github repository and entering the project folder.
+
+You can then start the initial setup with: `make setup`
+Now you need to configure your database credentials (see .github/ci/ci.toml as sample) in the fiole pentagame.toml in the project route:
+
+Pentagame.toml:
+
+```toml
+[server]
+ip = 'localhost'
+port = 8080
+
+[database]
+user = 'pentagame-dev'
+password = '<password>'
+host = 'localhost'
+port = 5432
+database = 'pentagame-dev'
+
+[auth]
+file = 'NEW'
+session = 24
+```
+
+When this is done you just need to run the database migrations and generate a new application key: `make db-setup generate`
+
+Build and serve the application (binary is in `target/release/pentagame`): `make serve`
+
+And you're done.
 
 ## States
 
