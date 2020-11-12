@@ -32,7 +32,7 @@ session = 24
 
 When this is done you just need to run the database migrations and generate a new application key: `make db-setup generate`
 
-Build and serve the application (binary is in `target/release/pentagame`): `make serve`
+Build and serve the application (binary is in `target/release/pentagame`): `make build serve`
 
 And you're done.
 
