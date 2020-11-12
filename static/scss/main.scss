@@ -3,10 +3,10 @@ Main.scss Frontend stylesheet for pentagame
 @license GPL v3.0 or newer @ Cobalt <https://cobalt.rocks>
 */
 
-@import 'mdb-ui-kit/src/scss/mdb.free.scss';
-@import 'variables.scss';
-@import 'color.scss';
-@import 'icons.scss';
+@import "mdb-ui-kit/src/scss/mdb.free.scss";
+@import "variables.scss";
+@import "color.scss";
+@import "icons.scss";
 
 #content {
   min-height: 100vh;
@@ -18,7 +18,7 @@ h1 {
   display: inline-block;
 
   &::after {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     top: 100%;

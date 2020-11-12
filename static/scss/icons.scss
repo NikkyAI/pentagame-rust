@@ -1,25 +1,25 @@
-@import 'variables.scss';
+@import "variables.scss";
 
 /* 
 Modified fortaweseom@/fontawesome - License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
 */
 
 @font-face {
-  font-family: 'Font Awesome 5 Free';
+  font-family: "Font Awesome 5 Free";
   font-style: normal;
   font-weight: 900;
   font-display: block;
-  src: url('/static/node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.eot');
-  src: url('/static/node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.eot?#iefix')
-      format('embedded-opentype'),
-    url('/static/node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2')
-      format('woff2'),
-    url('/static/node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff')
-      format('woff'),
-    url('/static/node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.ttf')
-      format('truetype'),
-    url('/static/node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.svg#fontawesome')
-      format('svg');
+  src: url("/static/node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.eot");
+  src: url("/static/node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.eot?#iefix")
+      format("embedded-opentype"),
+    url("/static/node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2")
+      format("woff2"),
+    url("/static/node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff")
+      format("woff"),
+    url("/static/node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.ttf")
+      format("truetype"),
+    url("/static/node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.svg#fontawesome")
+      format("svg");
 }
 
 /* Icons */
@@ -30,7 +30,7 @@ Modified fortaweseom@/fontawesome - License - https://fontawesome.com/license/fr
   font-variant: normal;
   text-rendering: auto;
   -webkit-font-smoothing: antialiased;
-  font-family: 'Font Awesome 5 Free';
+  font-family: "Font Awesome 5 Free";
   font-weight: bold;
 }
 
@@ -40,70 +40,70 @@ Modified fortaweseom@/fontawesome - License - https://fontawesome.com/license/fr
 
 /* bars */
 .navbar-toggler-icon::before {
-  content: '\f0c9';
+  content: "\f0c9";
 }
 
 /* times */
 .times-icon::before {
-  content: '\f00d';
+  content: "\f00d";
 }
 
 /* chevron-up */
 .tool-icon::before {
-  content: '\f7d9';
+  content: "\f7d9";
 }
 
 /* lock */
 .lock-icon::before {
-  content: '\f023';
+  content: "\f023";
 }
 
 /* code */
 .code-icon::before {
-  content: '\f121';
+  content: "\f121";
 }
 
 /* book */
 .book-icon::before {
-  content: '\f02d';
+  content: "\f02d";
 }
 
 /* branch */
 .branch-icon::before {
-  content: '\f126';
+  content: "\f126";
 }
 
 /* image */
 .image-icon::before {
-  content: '\f03e';
+  content: "\f03e";
 }
 
 /* file-alt */
 .file-icon::before {
-  content: '\f15c';
+  content: "\f15c";
 }
 
 /* crown */
 .crown-icon::before {
-  content: '\f521';
+  content: "\f521";
 }
 
 /* laptop code */
 .code-2-icon::before {
-  content: '\f5fc';
+  content: "\f5fc";
 }
 
 /* video */
 .video-icon::before {
-  content: '\f03d';
+  content: "\f03d";
 }
 
 /* pen */
 .pen-icon::before {
-  content: '\f304';
+  content: "\f304";
 }
 
 /* gamepad */
 .game-icon::before {
-  content: '\f11b';
+  content: "\f11b";
 }
