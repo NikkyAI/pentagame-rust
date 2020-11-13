@@ -6,7 +6,7 @@
   "author": "Cobalt <cobalt.rocks>",
   "license": "GPL-3.0-or-later",
   "scripts": {
-    "compile": "bash ../scripts/compile.sh",
+    "compile": "bash ../../scripts/compile.sh",
     "lint": "stylelint scss/*.scss"
   },
   "devDependencies": {

@@ -10,7 +10,6 @@ mod auth;
 mod config;
 mod db;
 mod frontend;
-// will be activated once tested and done mod logic;
 mod server;
 
 // imports

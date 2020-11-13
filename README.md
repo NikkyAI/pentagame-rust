@@ -9,7 +9,7 @@ You need [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.ht
 Start the setup process with cloning the github repository and entering the project folder.
 
 You can then start the initial setup with: `make setup`
-Now you need to configure your database credentials (see .github/ci/ci.toml as sample) in the fiole pentagame.toml in the project route:
+Now you need to configure your database credentials (see .github/ci/ci.toml as sample) in the file pentagame.toml in the project route:
 
 Pentagame.toml:
 
