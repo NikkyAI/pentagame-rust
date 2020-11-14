@@ -8,11 +8,11 @@
 # Library directory
 LIB_DIR="$PWD/static/"
 
-
 echo "Using '$TOOL' to install third-party libraries"
 
 # Install with yarn and/ or npm
 cd "$LIB_DIR"
 $TOOL
+cd ../
 
 echo "Done. Thank you for using pentagame"
