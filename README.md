@@ -36,6 +36,10 @@ Build and serve the application (binary is in `target/release/pentagame`): `make
 
 And you're done.
 
+To compile again you only need to run: `make serve` in `server/`
+
+> Serve invokes a compilation & Packaging of logic
+
 ## States
 
 Game Players are stored with an order. Player 1-5 = pid. This is order is based around the `rank` attribute of the UserGame
