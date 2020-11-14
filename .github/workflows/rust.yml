@@ -41,6 +41,7 @@ jobs:
         run: |
           cp .github/ci/ci.toml server/pentagame.toml
           cargo install diesel_cli --no-default-features --features postgres
+          cargo install wasm-pack
           bash scripts/full-setup.sh
       - name: Build
         run: |
