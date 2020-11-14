@@ -48,10 +48,9 @@ echo "Descending into logic/ to build pentagame-logic library"
 cd logic/
 
 wasm-pack build
-cd pkg/ && yarn link && cd ../server/static/ && yarn link "pentagame-logic" && cd ../../ # Npm is always installed if yarn is installed
+cd pkg/ && yarn link && cd ../../server/static/ && yarn link "pentagame-logic" && cd ../../ # Npm is always installed if yarn is installed
 
 echo "Done building. Ascending back"
-cd ../
 
 echo "Descending into server and start building"
 
