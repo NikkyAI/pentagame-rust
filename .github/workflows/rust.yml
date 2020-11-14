@@ -41,7 +41,8 @@ jobs:
         run: |
           cp .github/ci/ci.toml server/pentagame.toml
           cargo install diesel_cli --no-default-features --features postgres
-          make setup db-setup dev-generate
+          bash scripts/full-setup.sh
       - name: Build
-        run: make ci-build
-      # There are no application specific test at the moment
+        run: |
+          cd server/
+          make ci-build
