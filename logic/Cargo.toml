@@ -7,6 +7,15 @@ authors = ["Cobalt <https://cobalt.rocks>"]
 readme = "README.md"
 edition = "2018"
 
+[features]
+# The default set of optional packages. Most people will want to use these
+# packages, but they are strictly optional. Note that `session` is not a package
+# but rather another feature listed in this manifest.
+default = ["wasm"]
+# A feature with no dependencies is used mainly for conditional compilation,
+# like `#[cfg(feature = "go-faster")]`.
+wasm = ["wasm-bindgen", "web-sys"]
+
 [lib]
 crate-type = ["cdylib"]
 
@@ -14,16 +23,19 @@ crate-type = ["cdylib"]
 lto = true
 
 [dependencies]
-wasm-bindgen = { version = "0.2.68", features = ["serde-serialize"] }
+wasm-bindgen = { version = "0.2.68", features = [
+    "serde-serialize"
+], optional = true }
 graphlib = "^0.6"
 serde = { version = "1.0", features = ["derive"], default-features = false }
 
 [dependencies.web-sys]
 version = "0.3.22"
 features = ["console"]
+optional = true
 
 [target."cfg(debug_assertions)".dependencies]
 console_error_panic_hook = "0.1.5"
 
 [dev-dependencies]
-js-sys = "0.3.22"
+js-sys = { version = "0.3.22" }

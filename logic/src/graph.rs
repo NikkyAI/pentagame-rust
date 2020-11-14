@@ -1,4 +1,4 @@
-use crate::wasm::Field;
+use super::models::Field;
 use graphlib::{Graph, GraphErr, VertexId};
 
 // vertexmap

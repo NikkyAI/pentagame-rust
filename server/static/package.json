@@ -13,8 +13,7 @@
     "purgecss": "^3.0.0",
     "sass": "^1.29.0",
     "stylelint": "^13.7.2",
-    "stylelint-config-standard": "^20.0.0",
-    "terser": "^5.3.8"
+    "stylelint-config-standard": "^20.0.0"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.15.1",

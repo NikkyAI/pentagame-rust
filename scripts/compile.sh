@@ -9,11 +9,9 @@ echo "Compiling SCSS -> CSS"
 sass --style=compressed --load-path scss/ --load-path node_modules/ scss/main.scss css/app.css
 purgecss --config purgecss.config.js --css css/app.css --content "../templates/**/*.html" --output css/
 
-echo "Compiling JS"
-cd js
-for f in *.js; do
-    terser --mangle --compress -o "dist/$f" -- "$f"
-done
-cd ..
+echo "Building WASM & Compiling JS"
+cd ../../logic/
+npm run build
+cd ../server/static/
 
 echo "Done"
