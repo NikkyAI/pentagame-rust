@@ -8,16 +8,16 @@ ifeq (db-migration,$(firstword $(MAKECMDGOALS)))
 endif
 
 setup: 
-	./scripts/server-setup.sh
+	bash ../scripts/server-setup.sh
 db-setup:
-	./scripts/diesel.sh
+	bash ../scripts/diesel.sh
 .PHONY: db-migration
 db-migration:
-	./scripts/diesel.sh migration $(RUN_ARGS)
+	bash ../scripts/diesel.sh migration $(RUN_ARGS)
 db-print:
-	./scripts/diesel.sh print-schema
+	bash ../scripts/diesel.sh print-schema
 db-reset:
-	./scripts/diesel.sh reset
+	bash ../scripts/diesel.sh reset
 serve:
 	cargo b --release 
 	./target/release/pentagame serve

@@ -11,7 +11,7 @@ table! {
         id -> Int4,
         name -> Text,
         description -> Nullable<Text>,
-        host_id -> Uuid,
+        user_id -> Uuid,
         state -> Int2,
     }
 }
@@ -28,7 +28,7 @@ table! {
 table! {
     user_games (id) {
         id -> Int4,
-        player_id -> Uuid,
+        user_id -> Uuid,
         game_id -> Int4,
     }
 }
@@ -39,15 +39,16 @@ table! {
         username -> Text,
         active -> Bool,
         password -> Text,
+        status -> Text,
         created_at -> Timestamp,
     }
 }
 
 joinable!(game_moves -> games (game_id));
 joinable!(game_moves -> moves (move_id));
-joinable!(games -> users (host_id));
+joinable!(games -> users (user_id));
 joinable!(user_games -> games (game_id));
-joinable!(user_games -> users (player_id));
+joinable!(user_games -> users (user_id));
 
 allow_tables_to_appear_in_same_query!(
     game_moves,

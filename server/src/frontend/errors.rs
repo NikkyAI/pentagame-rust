@@ -38,16 +38,19 @@ impl ResponseError for UserError {
             StatusCode::INTERNAL_SERVER_ERROR => templates::ErrorTemplate {
                 message: format!("Something went terribly wrong on our side. We are sorry for any caused inconvenience."),
                 code: 500,
+                id: None
             }
             .into_response(),
             StatusCode::BAD_REQUEST => templates::ErrorTemplate {
                 message: "Seems like you submitted a corrupted/ invalid form".to_owned(),
                 code: 400,
+                id: None
             }
             .into_response(),
             _ => templates::ErrorTemplate {
                 message: format!("Something went terribly wrong on our side. We are sorry for any caused inconvenience."),
                 code: 500,
+                id: None
             }
             .into_response(),
         };

@@ -6,7 +6,9 @@ const dist = path.resolve(__dirname, '../server/static/js/');
 module.exports = {
   mode: 'production',
   entry: {
-    index: './js/main.js'
+    index: './js/main.js',
+    game: './js/game.js',
+    'game-join': './js/game-join.js'
   },
   output: {
     path: dist,

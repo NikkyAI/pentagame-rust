@@ -1,0 +1,33 @@
+{% extends "base.html" %} {% let name_copy = game.name %} {% block title %}
+Viewing game {{ name_copy }} {% endblock %} {% block content %}
+
+<div class="row">
+  <div class="card col-md-4 bg-dark text-white">
+    <div class="card-body">
+      <h2>{{ game.name }} <span class="text-light">{{ game.id }}</span></h2>
+      {% match game.description %} {% when Some with (description) %}
+      <p class="card-text">{{ description }}</p>
+      {% when None %} {% endmatch %}
+    </div>
+    {% if !is_host %}
+    <a class="btn btn-outline-light" href="/game/join/{{ game.id }}">
+      Join Now!
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="col-md-7 mx-auto">
+    <h2 class="mb-3">Players</h2>
+    <ul class="list-group list-group-flush my-2 text-dark">
+      {% for player in players %}
+      <li class="list-group-item">
+        <a href="/users/view/{{ player.0 }}" class="dark-link">
+          {{ player.1 }} <span class="text-darker"> #{{ player.0 }} </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+{% endblock %}

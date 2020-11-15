@@ -1,0 +1,67 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container">
+  <h1 class="title mb-4">Login</h1>
+
+  <form class="container" method="POST">
+    <div class="form-outline mb-4">
+      <input
+        type="text"
+        name="username"
+        id="username"
+        value="{{ username }}"
+        autocomplete="current-username"
+        class="form-control {% if username_error %}is-invalid{% endif %}"
+      />
+      <label for="username" class="form-label">
+        <i class="fas user-icon"></i> Username
+      </label>
+      <div class="invalid-feedback">Your username or password is wrong</div>
+    </div>
+
+    <div class="form-group form-outline">
+      <input
+        type="password"
+        name="password"
+        id="password"
+        value="{{ password }}"
+        autocomplete="current-password"
+        class="form-control"
+      />
+      <label for="password" class="form-label">
+        <i class="fas lock-icon"></i> Password
+      </label>
+    </div>
+
+    <div class="row my-4">
+      <div class="col d-flex justify-content-center">
+        <!-- Checkbox -->
+        <div class="form-check">
+          <input
+            class="form-check-input {% if cookie_error %}is-invalid{% endif %}"
+            type="checkbox"
+            name="cookies"
+            value="on"
+            unchecked
+          />
+          <label class="form-check-label" for="cookies">
+            Allow Authentication Cookies. <a href="/cookies/">Learn More</a>
+          </label>
+          <div class="invalid-feedback">You must agree before submitting.</div>
+        </div>
+        <!-- #CookieError -->
+      </div>
+    </div>
+
+    <div class="w-100 text-center">
+      <button
+        type="submit"
+        id="login"
+        class="btn btn-lg btn-rounded fit-content btn-outline-dark"
+      >
+        Login
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %} {% block title %}Login{% endblock %}

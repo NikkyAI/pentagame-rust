@@ -1,0 +1,28 @@
+{% extends "base.html" %} {% block title %} Creating Game {% endblock %} {%
+block content %}
+
+<form method="POST">
+  <!-- Name input -->
+  <div class="form-outline border-dark mb-4">
+    <input type="text" id="name" name="name" class="form-control" required />
+    <label class="form-label" for="name">Name</label>
+  </div>
+
+  <!-- Description input -->
+  <div class="form-outline border-dark mb-4">
+    <textarea
+      class="form-control"
+      id="description"
+      name="description"
+      rows="4"
+    ></textarea>
+    <label class="form-label" for="description">Description</label>
+  </div>
+
+  <!-- Submit button -->
+  <button type="submit" class="btn btn-outline-dark">
+    Create
+  </button>
+</form>
+
+{% endblock %}

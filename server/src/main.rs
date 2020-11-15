@@ -3,6 +3,7 @@
 extern crate diesel;
 extern crate actix_web;
 extern crate uuid;
+extern crate cached;
 
 // includes
 mod api;

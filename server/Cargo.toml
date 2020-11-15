@@ -34,4 +34,5 @@ actix-identity = "0.3.1"
 futures = "0.3.6"
 serde_json = "^1.0"
 time = "0.2.22"
+cached = "~0.20"
 pentagame-logic = { path = "../logic", default-features = false }

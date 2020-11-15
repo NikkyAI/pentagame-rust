@@ -3,10 +3,14 @@ Main.scss Frontend stylesheet for pentagame
 @license GPL v3.0 or newer @ Cobalt <https://cobalt.rocks>
 */
 
+$fa-font-path: "../node_modules/@fortawesome/fontawesome-free/webfonts/" !default;
+
 @import "mdb-ui-kit/src/scss/mdb.free.scss";
 @import "variables.scss";
+@import "@fortawesome/fontawesome-free/scss/fontawesome.scss";
+@import "@fortawesome/fontawesome-free/scss/solid.scss";
 @import "color.scss";
-@import "icons.scss";
+@import "pentagame.scss";
 
 #content {
   min-height: 100vh;

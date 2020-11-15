@@ -58,7 +58,7 @@
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div class="container-fluid">
+      <div class="container-fluid mr-auto">
         <a class="navbar-brand" href="/">
           <img
             src="/static/images/brand.svg"
@@ -91,16 +91,16 @@
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" aria-current="page" href="/game/"> Game </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" aria-current="page" href="/content/todo/">
-                TODO
-              </a>
+              <a class="nav-link" aria-current="page" href="/games/"> Game </a>
             </li>
           </ul>
         </div>
       </div>
+      {% match id.clone() %} {% when Some with (id) %}
+      <div class="container-fluid mr-0 ml-auto">
+        Profile
+      </div>
+      {% when None %} {% endmatch %} {% block navbar_extended %}{% endblock %}
     </nav>
 
     <!-- Content -->
