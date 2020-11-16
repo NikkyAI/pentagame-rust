@@ -126,7 +126,9 @@
         <a href="https://cobalt.rocks/pages/contact/" class="copyright">
           Cobalt
         </a>
-        <span id="footer-advanced"></span>
+        <a class="ml-1 text-white" href="/content/cookies">
+          - Cookies
+        </a>
       </div>
       <!-- #Copyright -->
     </footer>
@@ -135,5 +137,8 @@
     <!-- JS -->
     <script src="/static/node_modules/mdb-ui-kit/js/mdb.min.js"></script>
     <script src="/static/js/index.js"></script>
+
+    <!-- Page specific resources -->
+    {% block includes %}{% endblock %}
   </body>
 </html>

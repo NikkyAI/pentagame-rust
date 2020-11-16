@@ -9,8 +9,14 @@ pub struct IndexTemplate {
 }
 
 #[derive(Template)]
-#[template(path = "rules.html")]
+#[template(path = "content/rules.html")]
 pub struct RulesTemplate {
+    pub id: Option<SlimUser>,
+}
+
+#[derive(Template)]
+#[template(path = "content/cookies.html")]
+pub struct CookiesTemplate {
     pub id: Option<SlimUser>,
 }
 

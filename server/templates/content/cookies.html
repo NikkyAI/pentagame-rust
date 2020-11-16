@@ -1,0 +1,90 @@
+{% extends "base.html" %} {% block title %}Cookies{% endblock %} {% block
+content %}
+
+<!-- Accordion wrapper -->
+<div class="accordion" id="accordionExample">
+  <!-- Single collapse -->
+  <div id="headingOne">
+    <h2>
+      <button
+        class="btn btn-link btn-block text-left pl-3"
+        type="button"
+        data-toggle="collapse"
+        data-target="#collapseOne"
+        aria-expanded="true"
+        aria-controls="collapseOne"
+      >
+        What are cookies?
+      </button>
+    </h2>
+  </div>
+
+  <div
+    id="collapseOne"
+    class="collapse show pl-3"
+    aria-labelledby="headingOne"
+    data-parent="#accordionExample"
+  >
+    An HTTP cookie (also called web cookie, Internet cookie, browser cookie, or
+    simply cookie) is a small piece of data stored on the user's computer by the
+    web browser while browsing a website. Cookies were designed to be a reliable
+    mechanism for websites to remember stateful information (such as items added
+    in the shopping cart in an online store) or to record the user's browsing
+    activity (including clicking particular buttons, logging in, or recording
+    which pages were visited in the past). They can also be used to remember
+    pieces of information that the user previously entered into form fields,
+    such as names, addresses, passwords, and payment card numbers.
+
+    <br />
+    Source:
+    <a href="https://en.wikipedia.org/wiki/HTTP_cookie">
+      Wikipedia, 23/10/20
+    </a>
+  </div>
+  <!-- Single collapse -->
+
+  <!-- Single collapse -->
+  <div id="headingTwo">
+    <h2>
+      <button
+        class="btn btn-link btn-block text-left pl-3 collapsed"
+        type="button"
+        data-toggle="collapse"
+        data-target="#collapseTwo"
+        aria-expanded="false"
+        aria-controls="collapseTwo"
+      >
+        For what are cookies used?
+      </button>
+    </h2>
+  </div>
+
+  <div
+    id="collapseTwo"
+    class="collapse pl-3"
+    aria-labelledby="headingTwo"
+    data-parent="#accordionExample"
+  >
+    Cookies are only used when <strong>necessary</strong>. The authentication
+    system stores a <span class="text-monospace">auth</span> cookie after you
+    successfully login. This cookie is encrypted, limited to this domain and
+    only valid for a limited amount of time. This cookie is necessary for
+    recognizing authenticated users. The cookie contains an encrypted version of
+    your username and unique id. But there's no need to trust us, you can take a
+    look at the
+    <a href="https://gitlab.com/C0balt/oxidized-cms">source code.</a>
+  </div>
+  <!-- Single collapse -->
+</div>
+
+<!-- Accordion wrapper -->
+
+<a
+  href="https://github.com/Penta-Game/pentagame"
+  class="btn btn-outline-dark"
+  data-color="dark"
+>
+  See Source Code
+</a>
+
+{% endblock %}

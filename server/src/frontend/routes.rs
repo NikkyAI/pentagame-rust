@@ -16,6 +16,7 @@ use askama_actix::TemplateIntoResponse;
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
 use futures::future::{err, ok, Ready};
+use pentagame_logic::models::Game as PGame;
 use serde::Serialize;
 use serde_json::from_str;
 
@@ -95,6 +96,10 @@ pub async fn get_index(id: Option<SlimUser>) -> UserResponse {
 
 pub async fn get_rules(id: Option<SlimUser>) -> UserResponse {
     UserError::wrap_template(templates::RulesTemplate { id: id }.into_response())
+}
+
+pub async fn get_cookies(id: Option<SlimUser>) -> UserResponse {
+    UserError::wrap_template(templates::CookiesTemplate { id: id }.into_response())
 }
 
 pub async fn get_error_404(id: Option<SlimUser>) -> UserResponse {
@@ -259,7 +264,7 @@ pub async fn post_users_login(
     let conn = acquire_connection_user(&pool)?;
 
     /*
-    I may expand the below part with a fake hashing for time attack circumvention
+    I may expand the below part with fake hashing for time attack circumvention
     */
     let sacrifice = form.username.clone();
     let result = block(move || get_user_by_username(&conn, sacrifice))
@@ -471,6 +476,13 @@ pub async fn post_register_user(
     // logs new user in
     let user_string = serde_json::to_string(&user).unwrap();
     id.remember(user_string);
+
+    // redirect to index
+    Ok(redirect("/"))
+}
+
+pub async fn get_test(id: Option<SlimUser>) -> UserResponse {
+    PGame::test();
 
     // redirect to index
     Ok(redirect("/"))

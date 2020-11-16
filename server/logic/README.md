@@ -1,3 +1,7 @@
+# Pentagame Logic
+
+This borrows the graph logic from <https://docs.rs/graphlib/0.6.2/> and modifies the base slightly to fit the occupied based noe finding. The base IDs are also modified to allow for direct usage of Fields on vertic maps.
+
 ## How to install
 
 ```sh

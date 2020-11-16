@@ -1,3 +1,3 @@
 # Server
 
-WIP
+Use `pentagame/scripts/full-setup.sh`

@@ -10,8 +10,8 @@ sass --style=compressed --load-path scss/ --load-path node_modules/ scss/main.sc
 purgecss --config purgecss.config.js --css css/app.css --content "../templates/**/*.html" --output css/
 
 echo "Building WASM & Compiling JS"
-cd ../../logic/
+cd ../logic/
 npm run build
-cd ../server/static/
+cd ../static/
 
 echo "Done"

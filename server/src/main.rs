@@ -2,8 +2,8 @@
 #[macro_use]
 extern crate diesel;
 extern crate actix_web;
-extern crate uuid;
 extern crate cached;
+extern crate uuid;
 
 // includes
 mod api;

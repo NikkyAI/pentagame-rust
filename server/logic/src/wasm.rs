@@ -1,4 +1,5 @@
-use super::models::{Field, Game};
+use super::graph::Field;
+use super::models::Game;
 #[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;
 #[cfg(feature = "wasm")]

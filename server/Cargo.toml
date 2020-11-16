@@ -35,4 +35,4 @@ futures = "0.3.6"
 serde_json = "^1.0"
 time = "0.2.22"
 cached = "~0.20"
-pentagame-logic = { path = "../logic", default-features = false }
+pentagame_logic = { path = "logic", version = "0.1.0", default-features = false }

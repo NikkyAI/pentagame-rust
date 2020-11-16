@@ -1,6 +1,6 @@
 # You must change these to your own details.
 [package]
-name = "pentagame-logic"
+name = "pentagame_logic"
 description = "Pentagame shared logic binds"
 version = "0.1.0"
 authors = ["Cobalt <https://cobalt.rocks>"]
@@ -17,7 +17,7 @@ default = ["wasm"]
 wasm = ["wasm-bindgen", "web-sys"]
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "lib"]
 
 [profile.release]
 lto = true
@@ -26,8 +26,8 @@ lto = true
 wasm-bindgen = { version = "0.2.68", features = [
     "serde-serialize"
 ], optional = true }
-graphlib = "^0.6"
 serde = { version = "1.0", features = ["derive"], default-features = false }
+hashbrown = "0.9.1"
 
 [dependencies.web-sys]
 version = "0.3.22"
@@ -36,6 +36,7 @@ optional = true
 
 [target."cfg(debug_assertions)".dependencies]
 console_error_panic_hook = "0.1.5"
+
 
 [dev-dependencies]
 js-sys = { version = "0.3.22" }

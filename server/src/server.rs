@@ -71,13 +71,17 @@ pub async fn main(config_raw_path: String) -> Result<()> {
                     .show_files_listing()
                     .use_last_modified(true),
             )
-            .service(web::scope("/content").route("/rules", web::get().to(routes::get_rules)))
+            .service(
+                web::scope("/content")
+                    .route("/rules", web::get().to(routes::get_rules))
+                    .route("/cookies", web::get().to(routes::get_cookies)),
+            )
             .service(
                 web::scope("/games")
                     .route("/", web::get().to(routes::get_game_overview))
                     .route("/create", web::get().to(routes::get_create_game))
                     .route("/create", web::post().to(routes::post_create_game))
-                    .route("/view/{id}", web::get().to(routes::get_view_game))
+                    .route("/view/{id}", web::get().to(routes::get_view_game)),
             )
             .service(
                 web::scope("/users")
@@ -85,8 +89,9 @@ pub async fn main(config_raw_path: String) -> Result<()> {
                     .route("/login", web::post().to(routes::post_users_login))
                     .route("/logout", web::get().to(routes::get_logout_user))
                     .route("/register", web::get().to(routes::get_register_user))
-                    .route("/register", web::post().to(routes::post_register_user))
+                    .route("/register", web::post().to(routes::post_register_user)),
             )
+            .route("/test", web::get().to(routes::get_test))
             .route("/", web::get().to(routes::get_index))
             .default_service(web::route().to(routes::get_error_404))
     })
