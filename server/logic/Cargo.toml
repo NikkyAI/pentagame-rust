@@ -17,7 +17,7 @@ default = ["wasm"]
 wasm = ["wasm-bindgen", "web-sys"]
 
 [lib]
-crate-type = ["cdylib", "lib"]
+crate-type = ["cdylib", "rlib"]
 
 [profile.release]
 lto = true

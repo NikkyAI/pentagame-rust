@@ -1,7 +1,7 @@
 const path = require("path");
 const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
 
-const dist = path.resolve(__dirname, "../server/static/js/");
+const dist = path.resolve(__dirname, "../static/js/");
 
 module.exports = {
   mode: "production",

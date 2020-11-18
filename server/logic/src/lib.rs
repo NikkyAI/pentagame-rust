@@ -1,5 +1,5 @@
 mod errors;
 pub mod graph;
-mod iterators;
 pub mod models;
+#[cfg(feature = "wasm")]
 pub mod wasm;

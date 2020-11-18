@@ -17,8 +17,8 @@ pub fn create_game() -> JsValue {
 #[wasm_bindgen]
 pub fn create_stop(fid: i16, counter: i16, sid: i16) -> JsValue {
     let new_stop = Field {
-        id: [fid, counter, sid],
-        size: 1,
+        owner: Some(1u8),
+        occupied: false
     };
 
     return JsValue::from_serde(&new_stop).unwrap();
