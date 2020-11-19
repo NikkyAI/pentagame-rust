@@ -16,13 +16,11 @@ use askama_actix::TemplateIntoResponse;
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
 use futures::future::{err, ok, Ready};
-use pentagame_logic::models::Game as PGame;
 use serde::Serialize;
 use serde_json::from_str;
 
 // types
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
-// pub type APIResponse = Result<HttpResponse, APIError>;
 pub type UserResponse = Result<HttpResponse, UserError>;
 
 // Simple Redirect
@@ -91,22 +89,22 @@ Not registered -> get_error_404
 */
 
 pub async fn get_index(id: Option<SlimUser>) -> UserResponse {
-    UserError::wrap_template(templates::IndexTemplate { id: id }.into_response())
+    UserError::wrap_template(templates::IndexTemplate { id }.into_response())
 }
 
 pub async fn get_rules(id: Option<SlimUser>) -> UserResponse {
-    UserError::wrap_template(templates::RulesTemplate { id: id }.into_response())
+    UserError::wrap_template(templates::RulesTemplate { id }.into_response())
 }
 
 pub async fn get_cookies(id: Option<SlimUser>) -> UserResponse {
-    UserError::wrap_template(templates::CookiesTemplate { id: id }.into_response())
+    UserError::wrap_template(templates::CookiesTemplate { id }.into_response())
 }
 
 pub async fn get_error_404(id: Option<SlimUser>) -> UserResponse {
     UserError::wrap_template(
         templates::ErrorTemplate {
             code: 404,
-            id: id,
+            id,
             message: "The requested page is not available".to_owned(),
         }
         .into_response(),
@@ -132,19 +130,13 @@ pub async fn get_game_overview(id: Option<SlimUser>, pool: Data<DbPool>) -> User
     //  Though this should only take a maximum of 2-8ms when building first time and even less when hitting cache (20s lifetime)
     let games = get_cached_games(&conn, 0);
 
-    UserError::wrap_template(
-        templates::GamesOverviewTemplate {
-            id: id,
-            games: games,
-        }
-        .into_response(),
-    )
+    UserError::wrap_template(templates::GamesOverviewTemplate { id, games }.into_response())
 }
 
 pub async fn get_create_game(id: Option<SlimUser>) -> UserResponse {
     UserError::wrap_template(
         templates::GamesCreateTemplate {
-            id: id,
+            id,
             name: EMPTY.to_owned(),
             description: EMPTY.to_owned(),
             name_error: false,
@@ -203,8 +195,8 @@ pub async fn get_view_game(
 
     UserError::wrap_template(
         templates::GamesViewTemplate {
-            id: id,
-            is_host: is_host,
+            id,
+            is_host,
             game: gdata.0,
             players: gdata.1,
         }
@@ -229,7 +221,7 @@ pub async fn get_users_login(id: Option<SlimUser>) -> UserResponse {
             password: "".to_owned(),
             cookie_error: false,
             username_error: false,
-            id: id,
+            id,
         }
         .into_response(),
     )
@@ -253,7 +245,7 @@ pub async fn post_users_login(
                 username: form.username.clone(),
                 password: form.password.clone(),
                 username_error: false,
-                cookie_error: cookie_error,
+                cookie_error,
                 id: None,
             }
             .into_response(),
@@ -299,7 +291,7 @@ pub async fn post_users_login(
                     username: form.username.clone(),
                     password: form.password.clone(),
                     username_error: true,
-                    cookie_error: cookie_error,
+                    cookie_error,
                     id: None,
                 }
                 .into_response(),
@@ -317,7 +309,7 @@ pub async fn post_users_login(
                 username: form.username.clone(),
                 password: form.password.clone(),
                 username_error: true,
-                cookie_error: cookie_error,
+                cookie_error,
                 id: None,
             }
             .into_response(),
@@ -359,7 +351,7 @@ pub async fn post_register_user(
     form: Form<forms::UserForm>,
 ) -> UserResponse {
     // Validate fields
-    let user_error = form.username.len() > 40_usize
+    let username_error = form.username.len() > 40_usize
         || form.username.len() < 1_usize
         || !form.username.is_ascii();
     let mut password_error = false;
@@ -393,13 +385,13 @@ pub async fn post_register_user(
         password_error = false;
     }
 
-    if user_error || password_error || cookie_error {
+    if username_error || password_error || cookie_error {
         return UserError::wrap_template(
             templates::UserRegisterTemplate {
                 username: form.username.clone(),
-                username_error: user_error,
-                password_error: password_error,
-                cookie_error: cookie_error,
+                username_error,
+                password_error,
+                cookie_error,
                 password: form.password.clone(),
                 id: None,
                 alert: EMPTY,
@@ -476,13 +468,6 @@ pub async fn post_register_user(
     // logs new user in
     let user_string = serde_json::to_string(&user).unwrap();
     id.remember(user_string);
-
-    // redirect to index
-    Ok(redirect("/"))
-}
-
-pub async fn get_test(id: Option<SlimUser>) -> UserResponse {
-    PGame::test();
 
     // redirect to index
     Ok(redirect("/"))

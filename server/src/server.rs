@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::frontend::routes;
+use crate::api::routes as api_routes;
 use actix_files as fs;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{http::ContentEncoding, middleware::Compress, web, App, HttpServer};
@@ -7,6 +8,7 @@ use actix_web::{http::ContentEncoding, middleware::Compress, web, App, HttpServe
 use askama_actix::TemplateIntoResponse;
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
+use pentagame_logic::graph::Graph;
 use sodiumoxide::init;
 use std::io::Result;
 use std::path::Path;
@@ -41,6 +43,9 @@ pub async fn main(config_raw_path: String) -> Result<()> {
     // clone host for server bind
     let server_bind = config.server.ip.clone();
 
+    // base graph
+    let g = Graph::construct_graph();
+
     // create database pool for app
     let manager = ConnectionManager::<PgConnection>::new(config.database.build_connspec());
     let pool = r2d2::Pool::builder()
@@ -57,6 +62,7 @@ pub async fn main(config_raw_path: String) -> Result<()> {
         }
         App::new()
             .data(pool.clone())
+            .data(g.clone())
             .wrap(Compress::new(ContentEncoding::Br)) // enable brotli compression for application
             .wrap(IdentityService::new(
                 CookieIdentityPolicy::new(&secret_key)
@@ -78,6 +84,7 @@ pub async fn main(config_raw_path: String) -> Result<()> {
             )
             .service(
                 web::scope("/games")
+                    .service(web::resource("/ws/").to(api_routes::game_route))
                     .route("/", web::get().to(routes::get_game_overview))
                     .route("/create", web::get().to(routes::get_create_game))
                     .route("/create", web::post().to(routes::post_create_game))
@@ -91,7 +98,6 @@ pub async fn main(config_raw_path: String) -> Result<()> {
                     .route("/register", web::get().to(routes::get_register_user))
                     .route("/register", web::post().to(routes::post_register_user)),
             )
-            .route("/test", web::get().to(routes::get_test))
             .route("/", web::get().to(routes::get_index))
             .default_service(web::route().to(routes::get_error_404))
     })

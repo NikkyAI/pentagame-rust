@@ -19,8 +19,12 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use std::path::Path;
 
 pub fn main() -> std::io::Result<()> {
-    let matches: ArgMatches = App::new("Pentagame")
+    let matches: ArgMatches = App::new("pentagame online")
         .author("Cobalt <cobalt.rocks>")
+        .long_about(
+            "pentagame online  Copyright (C) 2020  Cobalt
+        This program comes with ABSOLUTELY NO WARRANTY",
+        )
         .version("0.0.1")
         .arg(
             Arg::with_name("config")

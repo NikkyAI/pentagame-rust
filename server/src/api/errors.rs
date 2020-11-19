@@ -1,7 +1,7 @@
 // imports
 use actix_web::{
-    dev::HttpResponseBuilder, error::ResponseError, http::header, http::StatusCode,
-    Error as WebError, HttpResponse,
+    dev::HttpResponseBuilder, error::Error as WebError, error::ResponseError, http::header,
+    http::StatusCode, HttpResponse,
 };
 use derive_more::{Display, Error};
 
@@ -51,7 +51,17 @@ impl APIError {
         match res {
             Ok(response) => Ok(response),
             Err(_) => Err(APIError::InternalError {
-                code: code,
+                code,
+                message: "Internal Error".to_string(),
+            }),
+        }
+    }
+
+    pub fn wrap_error<T>(res: Result<T, WebError>, code: u16) -> Result<T, APIError> {
+        match res {
+            Ok(response) => Ok(response),
+            Err(_) => Err(APIError::InternalError {
+                code,
                 message: "Internal Error".to_string(),
             }),
         }

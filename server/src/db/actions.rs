@@ -6,8 +6,8 @@ use crate::auth::generate_hash;
 use cached::{proc_macro::cached, stores::TimedCache};
 use chrono::offset::Local;
 use diesel::{
-    insert_into, result::Error, BelongingToDsl, ExpressionMethods, OptionalExtension, PgConnection,
-    QueryDsl, RunQueryDsl,
+    insert_into, result::Error, BelongingToDsl, ExpressionMethods, JoinOnDsl, OptionalExtension,
+    PgConnection, QueryDsl, RunQueryDsl,
 };
 use uuid::Uuid;
 
@@ -89,7 +89,7 @@ pub fn create_user(
         password: zero_trim(&hash),
         id: Uuid::new_v4(),
         created_at: now,
-        status: status,
+        status,
     };
 
     let res = insert_into(users::table)
@@ -107,6 +107,23 @@ pub fn get_user_by_username(conn: &PgConnection, name: String) -> Result<Option<
     use super::schema::users::dsl::*;
 
     users.filter(username.eq(&name)).first(conn).optional()
+}
+
+pub fn get_user_game(conn: &PgConnection, uid: Uuid) -> Result<Option<i32>, Error> {
+    use super::schema::games::{self, id as gid, state};
+    use super::schema::user_games::{self, user_id};
+
+    let user = users::table.find(uid).first::<User>(conn).optional()?;
+
+    match user {
+        Some(_) => Ok(games::table
+            .inner_join(user_games::table.on(user_id.eq(uid)))
+            .filter(state.lt(11))
+            .select(gid)
+            .first::<i32>(conn)
+            .optional()?),
+        None => Ok(None),
+    }
 }
 
 // WARNING: This can't use Result because of cached traits

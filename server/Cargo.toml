@@ -9,7 +9,9 @@ actix-web = { version = "3", default-features = false, features = [
     "compress",
     "secure-cookies",
 ] }
+actix-web-actors = "3"
 actix-files = "0.4.0"
+actix = "0.10"
 askama = { version = "0.10", default-features = false, features = [
     "with-actix-web",
     "mime",
@@ -35,4 +37,5 @@ futures = "0.3.6"
 serde_json = "^1.0"
 time = "0.2.22"
 cached = "~0.20"
+hashbrown = { version = "0.9.1", features = ["serde", "ahash-compile-time-rng"] }
 pentagame_logic = { path = "logic", version = "0.1.0", default-features = false }

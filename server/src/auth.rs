@@ -96,3 +96,10 @@ pub fn guard_api(id: &Option<SlimUser>) -> Result<(), APIError> {
         None => Err(APIError::AuthorizationError {}),
     }
 }
+
+pub fn guard_api_with_user(id: Option<SlimUser>) -> Result<SlimUser, APIError> {
+    match id {
+        Some(identity) => Ok(identity),
+        None => Err(APIError::AuthorizationError {}),
+    }
+}
