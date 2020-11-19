@@ -1,6 +1,6 @@
+use crate::api::routes as api_routes;
 use crate::config::Config;
 use crate::frontend::routes;
-use crate::api::routes as api_routes;
 use actix_files as fs;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{http::ContentEncoding, middleware::Compress, web, App, HttpServer};
@@ -85,6 +85,7 @@ pub async fn main(config_raw_path: String) -> Result<()> {
             .service(
                 web::scope("/games")
                     .service(web::resource("/ws/").to(api_routes::game_route))
+                    .route("/join/{id}", web::get().to(routes::get_game_join))
                     .route("/", web::get().to(routes::get_game_overview))
                     .route("/create", web::get().to(routes::get_create_game))
                     .route("/create", web::post().to(routes::post_create_game))

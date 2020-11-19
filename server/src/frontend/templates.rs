@@ -65,6 +65,12 @@ pub struct UserLoginTemplate {
 }
 
 #[derive(Template)]
+#[template(path = "games/game.html")]
+pub struct GameBoardTemplate {
+    pub id: Option<SlimUser>,
+}
+
+#[derive(Template)]
 #[template(path = "users/register.html")]
 pub struct UserRegisterTemplate {
     pub id: Option<SlimUser>,

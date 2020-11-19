@@ -1,21 +1,24 @@
 {% extends "base.html" %} {% block title %} Overview {% endblock %} {% block
 content %}
 
-<div class="col-md-2">
-  <div class="card bg-dark text-white">
-    <div class="card-body">
-      <div class="card-header">This is the side card</div>
-      <div class="card-text">
-        This is not a simple issue that can be resolved with my solution. You
-        may just want to find a more sophisticated answer or Spend some time to
-        craft these placeholders.
+<div class="row h-100" style="min-height: 80vh;">
+  <div class="col-md-2">
+    <div class="card bg-dark text-white">
+      <div class="card-body">
+        <div class="card-header">Game</div>
+
+        <div class="card-text">
+          This is not a simple issue that can be resolved with my solution. You
+          may just want to find a more sophisticated answer or Spend some time
+          to craft these placeholders.
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<div class="col-md-10 border-dark border-1">
-  <svg id="penta"></svg>
+  <div class="col-md-10 border-dark border">
+    <svg id="penta" class="h-100 w-100"></svg>
+  </div>
 </div>
 
 {% endblock %} {% block includes %}

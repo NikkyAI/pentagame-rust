@@ -13,6 +13,7 @@ table! {
         description -> Nullable<Text>,
         user_id -> Uuid,
         state -> Int2,
+        public -> Bool,
     }
 }
 

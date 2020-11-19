@@ -15,6 +15,7 @@ pub fn create_game(
     conn: &PgConnection,
     name: String,
     description: Option<String>,
+    public: bool,
     id: &SlimUser,
 ) -> Result<i32, Error> {
     use super::schema::{games, user_games};
@@ -28,6 +29,7 @@ pub fn create_game(
         name: zero_trim(&name),
         description: new_description,
         user_id: id.id,
+        public,
         state: 0, // see state mapping in server/db/models
     };
 

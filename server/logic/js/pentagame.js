@@ -1,412 +1,299 @@
-/*
-Pentagame.js borrowed from https://github.com/penta-jan/pentagames
-under unknown @ Pentajan
-*/
+import { Point, Figure } from "./core.js";
+import { SVGCircleElement } from "@svgdotjs/svg.js";
 
-// Hier beginnt die Pentagame Programmiererei...
+export class PentaMath {
+  /*
+    This class provides an appropriate representation of the sizes and values for the construction of a pentagame board.
+    The basic logic was supplied by @penta-jan <https://github.com/penta-jan>.
+    The implementation was written by @cobalt <https://cobalt.rocks>
+    Enhanced variant based on <https://github.com/Penta-Game/boardgame>
+    Inspired by <https://github.com/NikkyAI/pentagame>
+    To learn more about pentagame visit https://pentagame.org
+    */
 
-var canvas_click;
-var canvas_board;
-var canvas_play;
-var context_click;
-var context_board;
-var context_play;
-var pentaGame;
-var sqrt5 = Math.sqrt(5);
-var phi = (sqrt5 + 1) / 2;
-var rs = 12; // radius step (litle gray dots)  // this is the only absolute variable
-var ros = (8 / 12) * rs; // radius outer rim step // utter bollocks
-var rj = (rs * (9 - 2 * sqrt5)) / sqrt5; // 19;  // radius junction
-var rc = rs * sqrt5; //	21;  // radius corner
-var rr = (2 * rc + 4 * rj + 30 * rs) / Math.sqrt(phi + 2); // radius mid corner
-var rR = rr + rc / 2; // outer radius
-var centerX = rR; // 250;
-var centerY = rR; // 250;
-
-// debug helper
-function log(message) {
-  if (window.console) {
-    console.log(message);
-  }
-}
-
-function setupPentaGame() {
-  canvas_click = document.getElementById('pentacanvas_click');
-
-  // Make sure we don't execute when canvas isn't supported
-  if (canvas_click.getContext) {
-    context_click = canvas_click.getContext('2d');
-  } else {
-    return false;
-  }
-  canvas_board = document.getElementById('pentacanvas_board');
-  context_board = canvas_board.getContext('2d');
-  canvas_play = document.getElementById('pentacanvas_play');
-  context_play = canvas_play.getContext('2d');
-  //canvas_play.style.cursor = "pointer, auto";
-  //document.getElementById('container').style.cursor = 'crosshair';
-  //document.getElementById('container').style.cursor = 'help';
-  return true;
-}
-
-function drawCircle(context, X, Y, radius, colour) {
-  context.beginPath();
-  context.arc(X, Y, radius, 0, 2 * Math.PI, false);
-  context.fillStyle = colour;
-  context.fill();
-  context.lineWidth = 1;
-  context.strokeStyle = '#003300';
-  context.stroke();
-}
-
-function drawNumber(context, x, y, bgColor, number) {
-  var col = 'white';
-  switch (bgColor) {
-    case 'white':
-    case 'yellow':
-      col = 'black';
-  }
-  context.fillStyle = col;
-  context.fillText(number + '.', x - 6, y + 4);
-}
-
-var magic_map = {};
-
-function addCircle(context, X, Y, radius, isBoard, colour, r, g, b) {
-  if (isBoard) {
-    drawCircle(context, X, Y, radius, colour);
-  } else {
-    var i = rgb(r, g, b);
-    drawCircle(context, X, Y, radius, i);
-    magic_map[i] = { X: X, Y: Y, radius: radius };
-  }
-}
-
-function getColourName(index) {
-  switch (index) {
-    case 0:
-      return 'white';
-    case 1:
-      return 'blue';
-    case 2:
-      return 'red';
-    case 3:
-      return 'yellow';
-    case 4:
-      return 'green';
-    default:
-      alert('Not a valid colour index: ' + index);
-  }
-}
-
-function rgb(r, g, b) {
-  return 'rgb(' + r + ', ' + g + ', ' + b + ')';
-}
-
-function posString(r, g, b) {
-  return '[' + r + ', ' + g + ', ' + b + ']';
-}
-
-function rotate(cx, cy, x, y, angle) {
-  var radians = (Math.PI / 180) * angle,
-    cos = Math.cos(radians),
-    sin = Math.sin(radians),
-    nx = cos * (x - cx) + sin * (y - cy) + cx,
-    ny = cos * (y - cy) - sin * (x - cx) + cy;
-  return [nx, ny];
-}
-
-function drawPentaGame(context, isBoard) {
-  //
-  // don't touch the next 3 assignments!!!!
-  var numRimCirc = 13; // this many circles on the rim between startpoints
-  var rimAngleInc = -(60 / numRimCirc); // heuristics rulez!!!
-  var firstRot = -((Math.PI * rR) / 180) * (12 / numRimCirc);
-
-  // magic constants
-  var sinusfactor = Math.sin(Math.PI / 10); // 18 * Math.PI / 180
-  var cosinusfactor = Math.cos(Math.PI / 10); // 18 * Math.PI / 180
-  var rotatefactor = (72 * Math.PI) / 180;
-  var ratio1 = rc + rj + 2 * rs * 6;
-
-  if (isBoard) {
-    // draw central circle
-    drawCircle(context, centerX, centerY, rR + rs, 'gray');
-    drawCircle(context, centerX, centerY, rj, 'silver');
-  } else {
-    context.beginPath();
-    context.fillStyle = 'gray';
-    context.fillRect(0, 0, canvas_click.width, canvas_click.height);
-    context.stroke();
+  constructor(drawer) {
+    // holds the numerical constants
+    this._constants = {
+      l: 6, // legs
+      k: 3, // arms
+      p: Math.sqrt((25 - 11 * Math.sqrt(5)) / (5 - Math.sqrt(5))), // inner
+      golden: (Math.sqrt(5) + 1) / 2, // golden section value
+      theta: 18, // theta value
+    };
+    // holds the relative numerical relative values centered on s
+    this._sizes = {
+      s: 1, // stop on star
+      c: Math.sqrt(5), // corner stop
+      j: (9 - 2 * Math.sqrt(5)) / Math.sqrt(5), // junction stop
+      r: (2 / 5) * Math.sqrt(1570 + 698 * Math.sqrt(5)), // pentagram (diameter)
+    };
+    this._sizes.R = this._sizes.r + this._sizes.c; // entire board
+    this._sizes.outer_circle = (this._sizes.r / this._sizes.R) * 0.2; // background stroke width
+    this._sizes.inner_r =
+      ((this._constants.k + this._sizes.j) * (1.0 + this._sizes.c)) /
+      Math.sqrt(2.0 * (5.0 + this._sizes.c));
+    this._constants.sizes = this._sizes;
+    this.constants = this._constants;
+    this.drawer = drawer;
   }
 
-  context.font = '18px sans-serif';
-  for (i = 0; i < 5; i++) {
-    // startpoint
-    var spX = centerX + rr;
-    var spY = centerY;
-    var myColor = getColourName(i);
-    addCircle(context, spX, spY, rc, isBoard, myColor, i, 0, 0);
-    if (isBoard) {
-      drawNumber(context, spX, spY, myColor, i);
+  helper(centerX, centerY, radius, angle, options) {
+    if (options !== undefined && "shift" in options && options.shift === true) {
+      angle = (angle * Math.PI) / 180 + (Math.PI / 180.0) * -18;
+    } else {
+      angle = (angle * Math.PI) / 180;
     }
 
-    var ii = i < 3 ? i + 2 : i - 3;
-    //		var ii = (i);
-    var ij = ii == 4 ? 5 : ii + 6;
+    return {
+      x: centerX + radius * Math.cos(angle),
+      y: centerY + radius * Math.sin(angle),
+    };
+  }
 
-    var ik = (i + 1) % 5; // needed for outer rim
-    var rev = i > ik; // needed for rim, true between points 4 and 0
+  interpretGraphData(data) {
+    console.log(data);
+    for (let i = data.figures.length; i != -1; i--) {
+      let figure = data.figures[i];
+      if (figure.position[0] > figure.position[2]) {
+        let position = [
+          figure.position[2],
+          figure.position[1],
+          figure.position[0],
+        ];
+      }
+      this.drawFigure();
+    }
+  }
 
-    for (j = 0; j < 6; j++) {
-      // connect each startpoint with 2 neighbor junctions and startpoints
-      var m1 = rc + rs + 2 * rs * j;
-      addCircle(
-        context,
-        spX - cosinusfactor * m1,
-        spY - sinusfactor * m1,
-        rs,
-        isBoard,
-        'silver',
-        i,
-        ii + 5,
-        j + 1
+  drawFigure(id, FigureId, data) {
+    let element = document.getElementById(id);
+    const lineWidth = (0.1 / this.constants.sizes.R) * scale;
+    if (element !== undefined) {
+      let figure = new Figure({
+        type: data["type"],
+        shape: data["shape"],
+        color: data["color"],
+        id: FigureId,
+      });
+      element = new SVGCircleElement(element);
+      figure.node = this.drawer[data["shape"]](element[data["size"]]);
+      figure.node.attr({
+        cx: element.cx,
+        cy: element.cy,
+        fill: color,
+        "stroke-width": lineWidth,
+        stroke: "#d3d3d3",
+      });
+      return figure;
+    } else {
+      throw ReferenceError("Id was not found in DOM");
+    }
+  }
+
+  draw(drawer, scale, args) {
+    // evaluate args
+    if (args === undefined || args.colors === undefined) {
+      var colors = {
+        fields: ["blue", "white", "green", "yellow", "red"],
+        background: "#28292b",
+        foreground: "#d3d3d3",
+      };
+    } else {
+      var colors = args.colors;
+    }
+
+    if (args !== undefined && args.shift !== undefined) {
+      this.shift = { shift: true };
+    } else {
+      this.shift = { shift: false };
+    }
+
+    // setup board
+    var board = {
+      corners: {},
+      junctions: {},
+      stops: {
+        outer: {},
+        inner: {},
+      },
+    };
+
+    // fix drawer aspect ratio
+    drawer.attr({ preserveAspectRatio: "xMidYMid meet" });
+
+    // evaluate basic points and values
+    const center = { x: 0.5 * scale, y: 0.5 * scale };
+    scale = scale * 0.8; // prevent overflow
+    const lineWidth = (0.1 / this.constants.sizes.R) * scale;
+    const InnerRadius =
+      (scale / this.constants.sizes.R) * this.constants.sizes.inner_r;
+    const OuterRadius = scale / this.constants.sizes.c + lineWidth * 3.5;
+    const JunctionRadius =
+      (scale / this.constants.sizes.R) * this.constants.sizes.j;
+    const CornerRadius =
+      (scale / this.constants.sizes.R) * this.constants.sizes.c;
+    const StopRadius =
+      (scale / this.constants.sizes.R) * this.constants.sizes.s;
+
+    // bg circle
+    const BGCircle = drawer.circle(scale + lineWidth * 5);
+    BGCircle.attr({
+      cx: center.x,
+      cy: center.y,
+      fill: colors.background,
+      id: "background-circle",
+    });
+
+    // draw outer circle
+    const OuterBGCircle = drawer.circle(OuterRadius * 2);
+    OuterBGCircle.attr({
+      cx: center.x,
+      cy: center.y,
+      fill: "none",
+      stroke: colors.foreground,
+      "stroke-width": lineWidth,
+    });
+    OuterBGCircle.data({ id: "outer-circle" });
+
+    // drawing corners and junctions
+    for (var i = 0; i < 5; i++) {
+      let CornerAngle = i * -72;
+      let CornerPoints = this.helper(
+        center.x,
+        center.y,
+        OuterRadius,
+        CornerAngle,
+        this.shift
       );
-      addCircle(
-        context,
-        spX - cosinusfactor * m1,
-        spY + sinusfactor * m1,
-        rs,
-        isBoard,
-        'silver',
-        i,
-        ij,
-        j + 1
+      let JunctionAngle = CornerAngle + 180;
+      let JunctionPoints = this.helper(
+        center.x,
+        center.y,
+        InnerRadius,
+        JunctionAngle,
+        this.shift
       );
+
+      // draw stops before Junctions to prevent overlapping
+      for (let x = 3; x !== 0; x--) {
+        let StopAngle = CornerAngle + this.constants.theta * x;
+        let StopPoints = this.helper(
+          center.x,
+          center.y,
+          OuterRadius,
+          StopAngle,
+          this.shift
+        );
+        let OuterStop = drawer.circle(StopRadius);
+        OuterStop.attr({
+          fill: colors.foreground,
+          stroke: colors.background,
+          "stroke-width": lineWidth * 0.5,
+        });
+        OuterStop.center(StopPoints.x, StopPoints.y);
+        OuterStop.data({ id: `s-${i}-${x}` });
+        board.stops.outer[`s-${i}-${x}`] = {
+          x: StopPoints.x,
+          y: StopPoints.y,
+          angle: StopAngle,
+          node: OuterStop.node,
+        };
+        let ArmAngle = JunctionAngle - this.constants.theta * 7;
+        let ArmPoints = this.helper(
+          JunctionPoints.x,
+          JunctionPoints.y,
+          StopRadius * x + JunctionRadius / 4,
+          ArmAngle,
+          this.shift
+        );
+        let ArmStop = drawer.circle(StopRadius);
+        ArmStop.attr({
+          fill: colors.foreground,
+          stroke: colors.background,
+          "stroke-width": lineWidth * 0.5,
+        });
+        ArmStop.center(ArmPoints.x, ArmPoints.y);
+        ArmStop.data({ id: `s-${i + 1}-${x}` });
+        board.stops.inner[`s-${i + 1}-${x}`] = {
+          x: ArmPoints.x,
+          y: ArmPoints.y,
+          angle: ArmAngle,
+          node: ArmStop.node,
+        };
+      }
+
+      // draw legs
+      for (let x = 6; x !== 0; x--) {
+        const LegAngles = [
+          this.constants.theta + 180 + CornerAngle,
+          this.constants.theta * -1 + 180 + CornerAngle,
+        ];
+        for (const index in LegAngles) {
+          var Leg = drawer.circle(StopRadius);
+          let LegPoints = this.helper(
+            CornerPoints.x,
+            CornerPoints.y,
+            StopRadius * x + CornerRadius / 4 + lineWidth * 1.5,
+            LegAngles[index],
+            this.shift
+          );
+          Leg.attr({
+            fill: colors.foreground,
+            stroke: colors.background,
+            "stroke-width": lineWidth * 0.5,
+          });
+          Leg.center(LegPoints.x, LegPoints.y);
+          Leg.data({ id: `s-${i + 7}-${x}-${i + 3}` });
+          board.stops.inner[`s-${i}-${x}-${i + 5 + x}`] = {
+            x: LegPoints.x,
+            y: LegPoints.y,
+            angle: LegAngles[index],
+          };
+        }
+      }
+
+      // draw Corners and Junctions
+      let Corner = drawer.circle(CornerRadius);
+      Corner.attr({
+        fill: colors.foreground,
+        stroke: colors.fields[i],
+        "stroke-width": 0.75 * lineWidth,
+      });
+      Corner.center(CornerPoints.x, CornerPoints.y);
+      Corner.data({ id: i + 6 });
+      var Junction = drawer.circle(JunctionRadius);
+      Junction.attr({
+        fill: colors.foreground,
+        stroke: colors.fields[i],
+        "stroke-width": 0.75 * lineWidth,
+      });
+      Junction.center(JunctionPoints.x, JunctionPoints.y);
+      Junction.data({ id: i + 1 });
+      board.corners[i] = new Point({
+        id: i + 7,
+        x: CornerPoints.x,
+        y: CornerPoints.y,
+        next: i + 8,
+        node: Corner.node,
+        angle: CornerAngle,
+        color: colors[i],
+      });
+      board.junctions[i] = new Point({
+        id: i + 1,
+        x: JunctionPoints.x,
+        y: JunctionPoints.y,
+        next: i + 2,
+        node: Junction.node,
+        angle: JunctionAngle,
+        color: colors[i],
+      });
     }
 
-    var tempP = rotate(centerX, centerY, spX, spY, firstRot);
-    var xx = tempP[0]; // follows a circle path (cacheable)
-    var yy = tempP[1]; // xx and yy are overwritten every rot step
-
-    for (j = 0; j < numRimCirc; j++) {
-      tempP = rotate(centerX, centerY, xx, yy, rimAngleInc);
-      xx = tempP[0];
-      yy = tempP[1];
-      addCircle(
-        context,
-        xx,
-        yy,
-        ros,
-        isBoard,
-        'silver',
-        rev ? ik : i,
-        rev ? i : ik,
-        rev ? numRimCirc - j : j + 1
-      );
-    }
-    var m2 = cosinusfactor * ratio1;
-    var m3 = sinusfactor * ratio1;
-
-    myColor = getColourName(ii);
-    // draw junction
-    addCircle(context, spX - m2, spY - m3, rj, isBoard, myColor, ii + 5, 0, 0);
-    if (isBoard) {
-      drawNumber(context, spX - m2, spY - m3, myColor, ii + 5);
-    }
-
-    for (j = 1; j <= 3; j++) {
-      // connect junction spots
-      addCircle(
-        context,
-        spX - m2,
-        spY - m3 + rj + (j * 2 - 1) * rs,
-        rs,
-        isBoard,
-        'silver',
-        ii + 5,
-        ij,
-        j
-      );
-    }
-
-    // Move registration point to the center of the canvas
-    context.translate(centerX, centerY);
-    // Rotate 72 degree
-    context.rotate(rotatefactor);
-
-    // Move registration point back to the top left corner of canvas
-    context.translate(-centerX, -centerY);
-
-    // rotate table coordinates
-    var cos = Math.cos(rotatefactor);
-    var sin = Math.sin(rotatefactor);
-
-    for (key in magic_map) {
-      var o = magic_map[key];
-      var nx = cos * (o.X - centerX) + sin * (o.Y - centerY) + centerX;
-      var ny = cos * (o.Y - centerY) - sin * (o.X - centerX) + centerY;
-      o.X = nx;
-      o.Y = ny;
-      //log(magic_map[key]);
-    }
+    this.board = board;
+    return {
+      board: board,
+    };
   }
 }
 
-function clickHandler(event) {
-  var totalOffsetX = 0;
-  var totalOffsetY = 0;
-  var x = 0;
-  var y = 0;
-
-  var currentElement = canvas_click;
-
-  do {
-    totalOffsetX += currentElement.offsetLeft - currentElement.scrollLeft;
-    totalOffsetY += currentElement.offsetTop - currentElement.scrollTop;
-  } while ((currentElement = currentElement.offsetParent));
-
-  x = event.pageX - totalOffsetX;
-  y = event.pageY - totalOffsetY;
-
-  var c = context_click.getImageData(x, y, 1, 1);
-  var i = rgb(c.data[0], c.data[1], c.data[2]);
-  var j = posString(c.data[0], c.data[1], c.data[2]);
-
-  var o = magic_map[i];
-
-  if (!o) {
-    pentaGame.log.log('x:' + x + ' y:' + y + ' Clicked somewhere');
-  } else {
-    pentaGame.log.log('x:' + x + ' y:' + y + ' ID:' + j + ' o:' + o);
-    context_play.clearRect(0, 0, canvas_click.width, canvas_click.height);
-    drawCircle(context_play, o.X, o.Y, o.radius, 'black');
-  }
-
-  //alert("x:" + x + " y:" + y + " R:" + c.data[0] + " G:" + c.data[1] + " B:" + c.data[2] + " A:" + c.data[3]);
-  //log("x:" + x + " y:" + y + " R:" + c.data[0] + " G:" + c.data[1] + " B:" + c.data[2] + " A:" + c.data[3]);
-  //log("x:" + x + " y:" + y + " ID:" + rgb(c.data[0], c.data[1], c.data[2]) + " A:" + c.data[3]);
-  //log("x:" + x + " y:" + y + " ID:" + i + " o:" + o);
-
-  //drawCircle(context_play, x, y, 5, 'black');
-}
-
-function doPentaGame() {
-  setupPentaGame();
-  pentaGame = new PentaGame();
-  drawPentaGame(context_click, false);
-  drawPentaGame(context_board, true);
-  canvas_play.onclick = function (event) {
-    clickHandler(event);
-  };
-  //canvas_click.style.cursor = 'pointer';
-  canvas_play.style.cursor = 'cell'; // better visible than crosshair
-}
-
-function startPentaGame() {
-  var startBtn = document.getElementById('startGame');
-  startBtn.disabled = true;
-  var stopBtn = document.getElementById('stopGame');
-  stopBtn.disabled = false;
-  var szSel = document.getElementById('spielerZahl');
-  szSel.disabled = true;
-  var fsSel = document.getElementById('farbSchema');
-  fsSel.disabled = true;
-  pentaGame.log.log('startPentaGame');
-}
-
-function stopPentaGame() {
-  var startBtn = document.getElementById('startGame');
-  startBtn.disabled = false;
-  var stopBtn = document.getElementById('stopGame');
-  stopBtn.disabled = true;
-  var szSel = document.getElementById('spielerZahl');
-  szSel.disabled = false;
-  var fsSel = document.getElementById('farbSchema');
-  fsSel.disabled = false;
-  pentaGame.log.log('stopPentaGame');
-}
-
-class PentaGameLog {
-  constructor() {}
-
-  log(message) {
-    var l = document.getElementById('gameLog');
-    var t = document.createTextNode(message);
-    var p = document.createElement('li');
-    p.appendChild(t);
-    l.appendChild(p);
-  }
-
-  sendToBrowser() {
-    var msg = '';
-    var l = document.getElementById('gameLog');
-    var p = l.firstChild;
-    //	msg += p.textContent;
-    //	msg += "X";
-    while (p.nextSibling) {
-      p = p.nextSibling;
-      msg += p.textContent;
-      msg += '\n';
-    }
-
-    var dataStr = 'data:text/plain;charset=utf-8,' + encodeURIComponent(msg);
-    var dlAnchorElem = document.getElementById('downloadAnchor');
-    dlAnchorElem.setAttribute('href', dataStr);
-    dlAnchorElem.setAttribute('download', 'pentagame.log');
-    dlAnchorElem.click();
-  }
-}
-
-class PentaGameBoard {
-  constructor() {
-    this._rotation = 0;
-    this._position_map = {};
-  }
-
-  setRotation(value) {
-    if (this._rotation == value) {
-      return;
-    }
-    this._rotation = value;
-    this.drawBoard();
-  }
-
-  drawBoard() {}
-}
-
-////////////////////////////
-// the game itself
-class PentaGame {
-  constructor() {
-    this.log = new PentaGameLog();
-    this.board = new PentaGameBoard();
-  }
-}
-
-////////////////////////////
-// callbacks for ui controls
-
-function onRotateBoard(element) {
-  // sort out invalids
-  if (!Number.isInteger(element.valueAsNumber)) {
-    pentaGame.log.log('onChange: not an integer:' + element.value);
-    return;
-  }
-  if (element.valueAsNumber < -1 || element.valueAsNumber > 360) {
-    pentaGame.log.log('onChange: out of range:' + element.value);
-    return;
-  }
-  // roll over
-  if (element.value == 360) {
-    element.value = 0;
-  }
-  if (element.value == -1) {
-    element.value = 359;
-  }
-
-  // ok, set it
-  pentaGame.board.setRotation(element.value);
-}
-
-// vim: ts=2 sw=2 tw=0 noet
+export default { PentaMath };

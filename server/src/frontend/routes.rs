@@ -122,6 +122,10 @@ INFO: All routes except overview require are guarded
     /leave: Leave a game (a player may only join one game at a time. Can be changed anytime but works as architectural rate limiting)
 */
 
+pub async fn get_game_join(id: Option<SlimUser>) -> UserResponse {
+    UserError::wrap_template(templates::GameBoardTemplate { id }.into_response())
+}
+
 pub async fn get_game_overview(id: Option<SlimUser>, pool: Data<DbPool>) -> UserResponse {
     // acquire a connection
     let conn = acquire_connection_user(&pool)?;
@@ -155,8 +159,14 @@ pub async fn post_create_game(
     let user = guard_with_user(id.clone())?;
     let conn = acquire_connection_user(&pool)?;
 
+    // validates cookie checkbox
+    let public = match &data.public {
+        Some(content) => content == "on",
+        None => true,
+    };
+
     // freeing thread because diesel doesn't support async net
-    let gid = block(move || create_game(&conn, data.name.clone(), data.description.clone(), &user))
+    let gid = block(move || create_game(&conn, data.name.clone(), data.description.clone(), public, &user))
         .await
         .map_err(|e| {
             eprintln!("{}", e);

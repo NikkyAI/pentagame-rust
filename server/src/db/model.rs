@@ -40,6 +40,7 @@ pub struct Game {
     pub description: Option<String>,
     pub user_id: Uuid,
     pub state: i16,
+    pub public: bool,
 }
 
 #[derive(Identifiable, Associations, Queryable, PartialEq, Debug)]
@@ -81,6 +82,7 @@ pub struct NewGame {
     pub description: Option<String>,
     pub user_id: Uuid,
     pub state: i16,
+    pub public: bool,
 }
 
 #[derive(Deserialize, Insertable)]

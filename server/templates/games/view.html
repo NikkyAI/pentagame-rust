@@ -2,7 +2,7 @@
 Viewing game {{ name_copy }} {% endblock %} {% block content %}
 
 <div class="row">
-  <div class="card col-md-4 bg-dark text-white">
+  <div class="card col-md-4 py-2 bg-dark text-white">
     <div class="card-body">
       <h2>{{ game.name }} <span class="text-light">{{ game.id }}</span></h2>
       {% match game.description %} {% when Some with (description) %}
@@ -10,7 +10,7 @@ Viewing game {{ name_copy }} {% endblock %} {% block content %}
       {% when None %} {% endmatch %}
     </div>
     {% if !is_host %}
-    <a class="btn btn-outline-light" href="/game/join/{{ game.id }}">
+    <a class="btn btn-outline-light" href="/games/join/{{ game.id }}">
       Join Now!
     </a>
     {% endif %}
