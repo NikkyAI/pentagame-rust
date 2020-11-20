@@ -1,3 +1,5 @@
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/Penta-game/pentagame/Rust?style=for-the-badge) ](https://github.com/Penta-Game/pentagame/actions?query=workflow%3ARust) [![GitHub](https://img.shields.io/github/license/Penta-game/pentagame?style=for-the-badge)](https://github.com/Penta-Game/pentagame/blob/master/LICENSE)
+
 # Pentagame - Online
 
 Pentagame online client & server
