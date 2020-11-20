@@ -39,7 +39,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Setup
         run: |
-          cp .github/ci/ci.toml server/pentagame.toml
+          bash scripts/ci.sh
           cargo install diesel_cli --no-default-features --features postgres
           cargo install wasm-pack
       - name: Build
