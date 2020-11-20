@@ -15,6 +15,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   drawer.data({ size: size });
   const math = new PentaMath(drawer);
+  // I would like to have some sort of collapse where you could toggle
+  // e.g. 'shift' or colors.
   let board = math.draw(drawer, size, { shift: true });
 
   Array.prototype.slice
