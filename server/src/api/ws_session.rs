@@ -5,7 +5,6 @@ use hashbrown::HashMap;
 use serde::Serialize;
 use serde_json::to_string;
 use std::time::{Duration, Instant};
-use uuid::Uuid;
 
 /// How often heartbeat pings are sent
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
@@ -20,7 +19,7 @@ struct ServerMessage {
 
 pub struct WsGameSession {
     /// unique session id (== user id)
-    pub id: Uuid,
+    pub id: usize,
     /// Client must send ping at least once per 30 seconds (CLIENT_TIMEOUT),
     /// otherwise we drop connection.
     pub hb: Instant,
@@ -43,8 +42,6 @@ impl Actor for WsGameSession {
         let addr = ctx.address();
         self.addr
             .send(Connect {
-                game: self.game,
-                id: Uuid::nil(),
                 addr: addr.recipient(),
             })
             .into_actor(self)
@@ -52,7 +49,10 @@ impl Actor for WsGameSession {
                 match res {
                     Ok(res) => act.id = res.expect("Awesome"),
                     // something is wrong with game server
-                    _ => ctx.stop(),
+                    Err(why) => {
+                        eprintln!("The gamserver crashed: {:?}", why);
+                        ctx.stop()
+                    },
                 }
                 fut::ready(())
             })
@@ -79,7 +79,8 @@ impl Handler<Message> for WsGameSession {
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsGameSession {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         let msg = match msg {
-            Err(_) => {
+            Err(why) => {
+                eprintln!("Error: {:?}", why);
                 ctx.stop();
                 return;
             }
@@ -95,7 +96,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsGameSession {
                 self.hb = Instant::now();
             }
             ws::Message::Text(text) => {
-                unimplemented!("This has yet to implemented")
+                println!("Recieved: {}", text)
             }
             ws::Message::Binary(_) => {
                 // No support

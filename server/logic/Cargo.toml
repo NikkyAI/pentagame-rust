@@ -14,7 +14,7 @@ edition = "2018"
 default = ["wasm"]
 # A feature with no dependencies is used mainly for conditional compilation,
 # like `#[cfg(feature = "go-faster")]`.
-wasm = ["wasm-bindgen", "web-sys"]
+wasm = ["wasm-bindgen", "web-sys", "js-sys"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -28,15 +28,18 @@ wasm-bindgen = { version = "0.2.68", features = [
 ], optional = true }
 serde = { version = "1.0", features = ["derive"], default-features = false }
 hashbrown = "0.9.1"
+js-sys = { version = "0.3.22", optional = true }
 
 [dependencies.web-sys]
 version = "0.3.22"
-features = ["console"]
 optional = true
-
-[target."cfg(debug_assertions)".dependencies]
-console_error_panic_hook = "0.1.5"
-
-
-[dev-dependencies]
-js-sys = { version = "0.3.22" }
+features = [
+"console",
+  "BinaryType",
+  "Blob",
+  "ErrorEvent",
+  "FileReader",
+  "MessageEvent",
+  "ProgressEvent",
+  "WebSocket",
+]

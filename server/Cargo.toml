@@ -39,3 +39,5 @@ time = "0.2.22"
 cached = "~0.20"
 hashbrown = { version = "0.9.1", features = ["serde", "ahash-compile-time-rng"] }
 pentagame_logic = { path = "logic", version = "0.1.0", default-features = false }
+rand = "0.7.3"
+lazy_static = "1.4"

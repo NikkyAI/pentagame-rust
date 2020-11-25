@@ -3,6 +3,9 @@ Borrowed from https://gitlab.com/C0balt/oxidized-cms
 */
 
 use crate::auth::generate_key;
+use actix_web::web::ServiceConfig;
+use diesel::r2d2::{ConnectionManager, Pool, PoolError};
+use diesel::PgConnection;
 use serde::{Deserialize, Serialize};
 use std::fs::{read_to_string, File};
 use std::io::{Error, Read, Write};
@@ -64,10 +67,22 @@ impl DatabaseConfig {
             self.user, password, self.host, port, self.database
         )
     }
+
+    pub fn init_pool(config: Config) -> Result<Pool<ConnectionManager<PgConnection>>, PoolError> {
+        // create database pool for app
+        let manager = ConnectionManager::<PgConnection>::new(config.database.build_connspec());
+        Pool::builder().build(manager)
+    }
+
+    pub fn add_pool(cfg: &mut ServiceConfig) {
+        cfg.data(DatabaseConfig::init_pool(CONFIG.clone()));
+    }
 }
 
 impl Config {
-    pub fn load_config(config_path: &Path) -> Config {
+    pub fn load_config(config_raw_path: &str) -> Config {
+        let config_path = Path::new(config_raw_path);
+
         if !config_path.exists() {
             println!("ERROR: config '{}' not found", config_path.display());
             exit(1)
@@ -142,11 +157,13 @@ impl Config {
         Ok(key)
     }
 
-    pub fn load_key(&mut self, config_path: &Path) -> Result<SecretKey, Error> {
+    pub fn load_key(&mut self, config_path: &Path) -> SecretKey {
         // check if new key should be generated
         if self.auth.file == "NEW" {
             println!("Auth.file was set to 'NEW' -> Generating new key");
-            return self.create_key(config_path);
+            return self
+                .create_key(config_path)
+                .expect("Failed to create new secret key");
         }
 
         // evaluate and check path
@@ -176,7 +193,16 @@ impl Config {
                 }
             }
 
-            Ok(key_buffer)
+            key_buffer
         }
     }
+}
+
+// Throw the Config struct into a CONFIG lazy_static to avoid multiple processing
+// Do the same for SECRET_KEY
+// WARNING: This is a workaround for now and the config and key structure should be seperated
+//          at some point. I will do this when I'm having too much time or getting money for this
+lazy_static! {
+    pub static ref CONFIG: Config = Config::load_config(DEFAULT_CONFIG_NAME);
+    pub static ref SECRET_KEY: SecretKey = CONFIG.clone().load_key(Path::new(DEFAULT_KEY_FILE));
 }

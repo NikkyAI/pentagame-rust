@@ -1,0 +1,1 @@
+ALTER SEQUENCE games_id_seq RESTART WITH 1;

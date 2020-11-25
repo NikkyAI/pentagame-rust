@@ -4,7 +4,7 @@ const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
 const dist = path.resolve(__dirname, "../static/js/");
 
 module.exports = {
-  mode: "production", // change to 'development' when you need to debug in browser
+  mode: "development", // change to 'development' when you need to debug in browser
   entry: {
     index: "./js/main.js",
     game: "./js/game.js",

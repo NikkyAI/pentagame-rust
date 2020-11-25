@@ -1,56 +1,36 @@
-use crate::api::routes as api_routes;
-use crate::config::Config;
+use crate::api::{routes as api_routes, ws::GameServer};
+use crate::config::{DatabaseConfig, CONFIG, SECRET_KEY};
 use crate::frontend::routes;
+use actix::Actor;
 use actix_files as fs;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{http::ContentEncoding, middleware::Compress, web, App, HttpServer};
 #[allow(unused_imports)] // Required as trait in scope for template.into_response()
 use askama_actix::TemplateIntoResponse;
-use diesel::r2d2::ConnectionManager;
-use diesel::PgConnection;
 use pentagame_logic::graph::Graph;
 use sodiumoxide::init;
 use std::io::Result;
-use std::path::Path;
 use time::Duration;
 
 #[actix_web::main]
-pub async fn main(config_raw_path: String) -> Result<()> {
-    // construct path
-    let config_path = Path::new(&config_raw_path);
-
-    // load config
-    let mut config = Config::load_config(&config_path);
+pub async fn main() -> Result<()> {
+    // Start game server actor
+    let server = GameServer::default().start();
 
     // evaluate host
-    let host = match config.server.port {
-        Some(port) => format!("{}:{}", config.server.ip, port),
-        None => format!("{}:8080", config.server.ip),
-    };
-
-    // retrieve secret key
-    let secret_key = match config.load_key(&config_path) {
-        Ok(key) => key,
-        Err(why) => {
-            eprintln!("Couldn't load key generating new one instead: {}", why);
-            config.create_key(&config_path)?
-        }
+    let host = match CONFIG.server.port {
+        Some(port) => format!("{}:{}", CONFIG.server.ip, port),
+        None => format!("{}:8080", CONFIG.server.ip),
     };
 
     // get user session length
-    let session_length = config.auth.session.clone();
+    let session_length = CONFIG.auth.session.clone();
 
     // clone host for server bind
-    let server_bind = config.server.ip.clone();
+    let server_bind = CONFIG.server.ip.clone();
 
     // base graph
     let g = Graph::construct_graph();
-
-    // create database pool for app
-    let manager = ConnectionManager::<PgConnection>::new(config.database.build_connspec());
-    let pool = r2d2::Pool::builder()
-        .build(manager)
-        .expect("Failed to create pool.");
 
     // initialize actix-web server
     println!("Binding server to http://{}", &host);
@@ -61,11 +41,11 @@ pub async fn main(config_raw_path: String) -> Result<()> {
             Err(_) => panic!("CRITICAL: Failed to initialize sodiumoxide"),
         }
         App::new()
-            .data(pool.clone())
+            .configure(DatabaseConfig::add_pool)
             .data(g.clone())
             .wrap(Compress::new(ContentEncoding::Br)) // enable brotli compression for application
             .wrap(IdentityService::new(
-                CookieIdentityPolicy::new(&secret_key)
+                CookieIdentityPolicy::new(&SECRET_KEY.clone())
                     .name("auth")
                     .path("/")
                     .domain(server_bind.clone())
@@ -84,7 +64,11 @@ pub async fn main(config_raw_path: String) -> Result<()> {
             )
             .service(
                 web::scope("/games")
-                    .service(web::resource("/ws/").to(api_routes::game_route))
+                    .service(
+                        web::resource("/ws/")
+                            .to(api_routes::game_route)
+                            .data(server.clone()),
+                    )
                     .route("/join/{id}", web::get().to(routes::get_game_join))
                     .route("/", web::get().to(routes::get_game_overview))
                     .route("/create", web::get().to(routes::get_create_game))

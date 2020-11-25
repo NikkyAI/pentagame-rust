@@ -3,6 +3,15 @@ import { SVG } from "@svgdotjs/svg.js";
 import { getJSONP, download } from "./core.js";
 
 document.addEventListener("DOMContentLoaded", function () {
+  /*
+   dynamic import should have some sort of error handling with e.g. popup
+   for not supported browsers
+   */
+  import("../pkg").then((module) => {
+    module.create_socket("localhost", 8080);
+  });
+
+  // draw the initial board
   const size = 1000;
 
   let drawer = SVG().addTo("#penta");

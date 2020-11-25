@@ -1,9 +1,14 @@
 // loading macros
 #[macro_use]
 extern crate diesel;
+#[macro_use]
 extern crate actix_web;
+#[macro_use]
 extern crate cached;
+#[macro_use]
 extern crate uuid;
+#[macro_use]
+extern crate lazy_static;
 
 // includes
 mod api;
@@ -26,15 +31,6 @@ pub fn main() -> std::io::Result<()> {
         This program comes with ABSOLUTELY NO WARRANTY",
         )
         .version("0.0.1")
-        .arg(
-            Arg::with_name("config")
-                .short("c")
-                .default_value(DEFAULT_CONFIG_NAME)
-                .long("config")
-                .value_name("CONFIG")
-                .help("Sets a custom config file")
-                .takes_value(true),
-        )
         .subcommand(SubCommand::with_name("serve").about("serve pentagame"))
         .subcommand(
             SubCommand::with_name("generate")
@@ -52,24 +48,21 @@ pub fn main() -> std::io::Result<()> {
         .get_matches();
 
     // read config from 'cms.toml' and evaluate host
-    let config_raw_path = match matches.value_of("config") {
-        Some(path) => path,
-        None => DEFAULT_CONFIG_NAME,
-    }
-    .to_owned();
-
     match matches.subcommand_matches("serve") {
-        Some(_) => {
-            let path_copy = config_raw_path.clone();
-            server::main(path_copy)?
-        }
+        Some(_) => server::main()?,
         None => (),
     };
 
     match matches.subcommand_matches("generate") {
         Some(subcommand_matches) => {
+            let config_raw_path = match matches.value_of("config") {
+                Some(path) => path,
+                None => DEFAULT_CONFIG_NAME,
+            }
+            .to_owned();
+
             let config_path = Path::new(&config_raw_path);
-            let mut config = config::Config::load_config(config_path.clone());
+            let mut config = config::Config::load_config(&config_raw_path);
             config.auth.file = subcommand_matches.value_of("file").unwrap().to_owned();
             config.dump_config(&config_path)?;
             auth::generate_key(&config.auth)?;

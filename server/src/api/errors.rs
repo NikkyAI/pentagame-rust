@@ -29,7 +29,6 @@ pub enum APIError {
 
 impl ResponseError for APIError {
     fn error_response(&self) -> HttpResponse {
-        eprintln!("{}", self.to_string());
         HttpResponseBuilder::new(self.status_code())
             .set_header(header::CONTENT_TYPE, "text/html; charset=utf-8")
             .body(self.to_string())
@@ -60,10 +59,13 @@ impl APIError {
     pub fn wrap_error<T>(res: Result<T, WebError>, code: u16) -> Result<T, APIError> {
         match res {
             Ok(response) => Ok(response),
-            Err(_) => Err(APIError::InternalError {
-                code,
-                message: "Internal Error".to_string(),
-            }),
+            Err(why) => {
+                eprintln!("Wrapped Response failed gracefully: {:?}", why);
+                Err(APIError::InternalError {
+                    code,
+                    message: "Internal Error".to_string(),
+                })
+            }
         }
     }
 }

@@ -1,10 +1,11 @@
 use super::errors::APIError;
+use crate::config::{DatabaseConfig, CONFIG};
 use crate::db::actions::get_user_game;
 use crate::frontend::routes::DbPool;
 use actix::prelude::*;
 use hashbrown::{HashMap, HashSet};
+use rand::{self, rngs::ThreadRng, Rng};
 use serde::Serialize;
-use uuid::Uuid;
 
 // Game server sends this messages to session
 #[derive(Message, Serialize)]
@@ -33,12 +34,8 @@ pub struct Message {
 
 // New game session is created
 #[derive(Message)]
-#[rtype(result = "Result<Uuid, APIError>")]
+#[rtype(result = "Result<usize, APIError>")]
 pub struct Connect {
-    // session id (== user id)
-    pub id: Uuid,
-    // joined game
-    pub game: i32,
     // session id (== user id)
     pub addr: Recipient<Message>,
 }
@@ -47,7 +44,7 @@ pub struct Connect {
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct Disconnect {
-    pub id: Uuid,
+    pub id: usize,
 }
 
 // Send message to specific game
@@ -55,7 +52,7 @@ pub struct Disconnect {
 #[rtype(result = "()")]
 pub struct ClientMessage {
     // Id of the client session
-    pub id: Uuid,
+    pub id: usize,
     /*
     action & data
     ---
@@ -79,31 +76,35 @@ pub struct ClientMessage {
 #[rtype(result = "()")]
 pub struct Join {
     // Client id
-    pub id: Uuid,
+    pub id: usize,
     // Game id
     pub game: i32,
 }
 
 // `GameServer` manages  and responsible for coordinating game sessions
 pub struct GameServer {
-    sessions: HashMap<Uuid, Recipient<Message>>,
-    games: HashMap<i32, HashSet<Uuid>>,
+    sessions: HashMap<usize, Recipient<Message>>,
+    games: HashMap<i32, HashSet<usize>>,
     pool: DbPool,
+    rng: ThreadRng,
+}
+
+impl Default for GameServer {
+    fn default() -> GameServer {
+        println!("Triggered defualt crteation");
+        GameServer {
+            games: HashMap::new(),
+            sessions: HashMap::new(),
+            pool: DatabaseConfig::init_pool(CONFIG.clone())
+                .expect("Database pool failed to initialize"),
+            rng: rand::thread_rng(),
+        }
+    }
 }
 
 impl GameServer {
-    pub fn new(pool: &DbPool) -> Result<GameServer, APIError> {
-        let server_pool = pool.clone();
-
-        Ok(GameServer {
-            games: HashMap::new(),
-            sessions: HashMap::new(),
-            pool: server_pool,
-        })
-    }
-
     // Send message to all users in the room
-    fn send_message(&self, game: &i32, action: u8, data: HashMap<String, String>, skip_id: Uuid) {
+    fn send_message(&self, game: &i32, action: u8, data: HashMap<String, String>, skip_id: usize) {
         if let Some(sessions) = self.games.get(game) {
             for id in sessions {
                 if *id != skip_id {
@@ -130,36 +131,16 @@ impl Actor for GameServer {
 //
 // Register new session and assign unique id to this session
 impl Handler<Connect> for GameServer {
-    type Result = Result<Uuid, APIError>;
+    type Result = Result<usize, APIError>;
 
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
-        // register session with random id
-        let conn = match self.pool.get() {
-            Ok(connection) => connection,
-            Err(_) => {
-                return Err(APIError::DataBasePoolError {
-                    message: "Failed to acquire connection".to_owned(),
-                });
-            }
-        };
-
-        let gid = match get_user_game(&conn, msg.id).expect("This shouldn't fail") {
-            Some(id) => id,
-            None => {
-                return Err(APIError::AuthorizationError {});
-            }
-        };
-
-        self.sessions.insert(msg.id, msg.addr);
-
-        // auto join session to Main room
-        self.games
-            .entry(gid)
-            .or_insert_with(HashSet::new)
-            .insert(msg.id);
+        // register session with random id. The +1 ensures that 0 is never a session id
+        // to enable 0 as placeholder for nobody when skipping
+        let id = self.rng.gen::<usize>() + 1_usize;
+        self.sessions.insert(id, msg.addr);
 
         // send id back
-        Ok(msg.id)
+        Ok(id)
     }
 }
 
@@ -181,10 +162,10 @@ impl Handler<Disconnect> for GameServer {
         }
 
         // send message to other users
-        let mut data = HashMap::with_capacity(1);
+        let mut data: HashMap<String, String> = HashMap::with_capacity(1);
         data.insert(String::from("user"), msg.id.to_string());
         for game in games {
-            self.send_message(&game, 3_u8, data.clone(), Uuid::nil());
+            self.send_message(&game, 3_u8, data.clone(), 0);
         }
     }
 }
@@ -221,7 +202,7 @@ impl Handler<Join> for GameServer {
         let mut data = HashMap::with_capacity(1);
         data.insert(String::from("user"), msg.id.to_string());
         for game in games {
-            self.send_message(&game, 3_u8, data.clone(), Uuid::nil());
+            self.send_message(&game, 3_u8, data.clone(), 0);
         }
 
         self.games
