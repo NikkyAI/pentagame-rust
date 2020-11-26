@@ -83,6 +83,9 @@ pub async fn main() -> Result<()> {
                     .route("/register", web::get().to(routes::get_register_user))
                     .route("/register", web::post().to(routes::post_register_user)),
             )
+            .service(web::scope("/api").service(
+                web::scope("/games").route("/info", web::get().to(api_routes::get_game_meta)),
+            ))
             .route("/", web::get().to(routes::get_index))
             .default_service(web::route().to(routes::get_error_404))
     })

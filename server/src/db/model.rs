@@ -32,7 +32,7 @@ States:
     - 6-10 (pid-5): Waiting for {pid} to set stopper
     - 11-16 (10 + winner amount) (finished): ranking is changed so that winners are at the top. Winner amount is the used for
 */
-#[derive(Identifiable, Queryable, Associations, PartialEq, Debug)]
+#[derive(Identifiable, Serialize, Queryable, Associations, PartialEq, Debug)]
 #[belongs_to(User)]
 pub struct Game {
     pub id: i32,

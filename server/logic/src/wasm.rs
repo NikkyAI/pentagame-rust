@@ -4,7 +4,6 @@ use wasm_bindgen::{prelude::*, JsCast};
 #[cfg(feature = "wasm")]
 use web_sys::{ErrorEvent, MessageEvent, WebSocket};
 
-
 #[cfg(feature = "wasm")]
 macro_rules! console_log {
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
@@ -34,7 +33,7 @@ pub fn create_socket(host: String, port: u16) -> Result<(), JsValue> {
     // create callback
     let cloned_ws = ws.clone();
     let onmessage_callback = Closure::wrap(Box::new(move |e: MessageEvent| {
-         if let Ok(txt) = e.data().dyn_into::<js_sys::JsString>() {
+        if let Ok(txt) = e.data().dyn_into::<js_sys::JsString>() {
             console_log!("message event, received Text: {:?}", txt);
         } else {
             console_log!("message event, received Unknown: {:?}", e.data());
