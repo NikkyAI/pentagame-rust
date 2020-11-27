@@ -69,3 +69,12 @@ impl APIError {
         }
     }
 }
+
+impl From<actix_web::Error> for APIError {
+    fn from(_: actix_web::Error) -> Self {
+        APIError::InternalError {
+            code: 3,
+            message: "Failed to create response".to_owned(),
+        }
+    }
+}

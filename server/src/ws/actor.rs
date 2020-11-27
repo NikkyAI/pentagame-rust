@@ -1,30 +1,35 @@
-use super::errors::APIError;
+use crate::api::errors::APIError;
 use crate::config::{DatabaseConfig, CONFIG};
-use crate::db::actions::get_user_game;
 use crate::frontend::routes::DbPool;
 use actix::prelude::*;
 use hashbrown::{HashMap, HashSet};
 use rand::{self, rngs::ThreadRng, Rng};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 // Game server sends this messages to session
-#[derive(Message, Serialize)]
+#[derive(Message, Serialize, Deserialize)]
 #[rtype(result = "()")]
 pub struct Message {
     /*
-    | action | description                  | data             |
-    | ------ | ---------------------------- | ---------------- |
-    | 0      | {user} joined room           | {"user": {user}} |
-    | 1      | {user} made move             | {                |
-    |        |                              |  "user": {user}, |
-    |        |                              |  "move": String  |
-    |        |                              | }                |
-    | 2      | {user} needs to place figure | {"user": {user}} |
-    | 3      | {user} placed figure         | {                |
-    |        |                              |  "user": {user}, |
-    |        |                              |  "move": String  |
-    |        |                              | }                |
-    | 4      | {user} disocnnected          | {"user": {user}} |
+    | action | description                  | data                 |
+    | ------ | ---------------------------- | -------------------- |
+    | 0      | {user} joined room           | {"user": {user}}     |
+    | 1      | {user} made move             | {                    |
+    |        |                              |  "user": {user},     |
+    |        |                              |  "move": String      |
+    |        |                              | }                    |
+    | 2      | {user} needs to place figure | {"user": {user}}     |
+    | 3      | {user} placed figure         | {                    |
+    |        |                              |  "user": {user},     |
+    |        |                              |  "move": String      |
+    |        |                              | }                    |
+    | 4      | {user} disconnected          | {"user": {user}}     |
+    | 5      | Login                        | {                    |
+    |        |                              |  "name": String,     |
+    |        |                              |  "password": String, |
+    |        |                              | }                    |
+
+    Login is bound to websocket as cookie so no logout action required
     */
     pub action: u8,
     pub data: HashMap<String, String>,
@@ -91,7 +96,7 @@ pub struct GameServer {
 
 impl Default for GameServer {
     fn default() -> GameServer {
-        println!("Triggered defualt crteation");
+        println!("Triggered default creation");
         GameServer {
             games: HashMap::new(),
             sessions: HashMap::new(),

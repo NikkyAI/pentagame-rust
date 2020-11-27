@@ -25,14 +25,15 @@ UserError:
 pub enum UserError {
     #[display(fmt = "Internal Error {}: {}", code, message)]
     InternalError { code: u16, message: String },
-    #[display(fmt = "Query Error {}: {}", code, message)]
-    QueryError { code: u16, message: String },
     #[display(fmt = "Authorization is required")]
     AuthorizationError {},
 }
 
 impl ResponseError for UserError {
     fn error_response(&self) -> HttpResponse {
+        eprintln!("UserError: {:?}", self.to_string());
+
+
         let response = match self.status_code() {
             StatusCode::UNAUTHORIZED => Ok(redirect("/users/login")),
             StatusCode::INTERNAL_SERVER_ERROR => templates::ErrorTemplate {
@@ -57,16 +58,18 @@ impl ResponseError for UserError {
 
         match response {
             Ok(resp) => resp,
-            Err(_) => HttpResponseBuilder::new(self.status_code())
-                .set_header(header::CONTENT_TYPE, "text/html; charset=utf-8")
-                .body(self.to_string()),
+            Err(why) => {
+                eprintln!("UserError: {:?}", why);
+                HttpResponseBuilder::new(self.status_code())
+                    .set_header(header::CONTENT_TYPE, "text/html; charset=utf-8")
+                    .body(self.to_string())
+            }
         }
     }
 
     fn status_code(&self) -> StatusCode {
         match *self {
             UserError::InternalError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-            UserError::QueryError { .. } => StatusCode::NOT_FOUND,
             UserError::AuthorizationError { .. } => StatusCode::UNAUTHORIZED,
         }
     }
@@ -76,10 +79,13 @@ impl UserError {
     pub fn wrap_template(res: Result<HttpResponse, WebError>) -> UserResponse {
         match res {
             Ok(response) => Ok(response),
-            Err(_) => Err(UserError::InternalError {
-                code: 1,
-                message: "Failed to render requested template".to_owned(),
-            }),
+            Err(why) => {
+                eprintln!("InternalError: {:?}", why);
+                Err(UserError::InternalError {
+                    code: 1,
+                    message: "Failed to render requested template".to_owned(),
+                })
+            }
         }
     }
 }

@@ -16,6 +16,7 @@ pentagame.toml
 
 # VSCode Workspaces
 *.code-workspace
+.vscode/
 
 # key
 secret.key

@@ -9,10 +9,12 @@ module.exports = {
     "hide",
     "mr-0",
     "form-notch",
+    "bg-warning",
     "form-notch-middle",
     "form-notch-trailing",
     "form-notch-leading",
     "collapsing",
+    "title-white",
   ],
   variables: true,
 };

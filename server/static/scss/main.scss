@@ -32,3 +32,19 @@ h1 {
     background: $dark;
   }
 }
+
+.title-white {
+  position: relative;
+  display: inline-block;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 100%;
+    margin: 0.1rem auto;
+    width: 50%;
+    height: 0.1rem;
+    background: $light;
+  }
+}

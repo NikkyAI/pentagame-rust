@@ -3,7 +3,6 @@ Borrowed from https://gitlab.com/C0balt/oxidized-cms
 */
 
 use crate::auth::generate_key;
-use actix_web::web::ServiceConfig;
 use diesel::r2d2::{ConnectionManager, Pool, PoolError};
 use diesel::PgConnection;
 use serde::{Deserialize, Serialize};
@@ -72,10 +71,6 @@ impl DatabaseConfig {
         // create database pool for app
         let manager = ConnectionManager::<PgConnection>::new(config.database.build_connspec());
         Pool::builder().build(manager)
-    }
-
-    pub fn add_pool(cfg: &mut ServiceConfig) {
-        cfg.data(DatabaseConfig::init_pool(CONFIG.clone()));
     }
 }
 

@@ -1,25 +1,54 @@
-import { PentaMath } from "./pentagame.js";
-import { SVG } from "@svgdotjs/svg.js";
-import { getJSONP, download } from "./core.js";
+import { PentaMath } from './pentagame.js';
+import { SVG } from '@svgdotjs/svg.js';
+import { getJSONP, download } from './core.js';
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener('DOMContentLoaded', function () {
   /*
-   dynamic import should have some sort of error handling with e.g. popup
-   for not supported browsers
+   Check for screen size and show popup if incompatible
+  */
+
+  if (screen.height < 600 || screen.width < 1000) {
+    //Create the element using the createElement method.
+    var modal_card = document.createElement('card');
+    modal_card.classList.add(
+      'd-flex',
+      'align-items-center',
+      'justify-content-center'
+    );
+    modal_card.style.zIndex = 1100;
+    modal_card.style.position = 'fixed';
+    modal_card.style.top = '4rem';
+    modal_card.style.width = '100%';
+    modal_card.id = 'warning-card';
+    modal_card.innerHTML =
+      '<div class="card" style="width: 80%;"><div class="card-body bg-warning text-white"><h2 class="card-title title-white">Warning</h2><p class="card-text">Your screen is smaller than the required screen size. Consider flipping your phone/ tablet in horizontal mode or playing this game on a PC.</p><button type="button" id="destroy-warning" class="btn btn-warning text-white">Continue anyway</button></div></div>';
+    // Finally, append the element to the HTML body
+    document.body.appendChild(modal_card);
+
+    document.getElementById('destroy-warning').addEventListener('click', () => {
+      document.getElementById('warning-card').remove();
+    });
+  }
+
+  /*
+   This doesn't do authentication as the request is handled with SessionCookies
    */
-  import("../pkg").then((module) => {
-    module.create_socket("localhost", 8080);
-  });
+  let gsocket = new WebSocket('ws://localhost:8080/games/ws/');
+  gsocket.onopen = (event) => {
+    gsocket.send(JSON.stringify({ action: 1, data: { key: 'val' } }));
+  };
+
+  console.log(document.cookie);
 
   // draw the initial board
   const size = 1000;
 
-  let drawer = SVG().addTo("#penta");
-  drawer.addClass("allow-overflow responsive-img");
+  let drawer = SVG().addTo('#penta');
+  drawer.addClass('allow-overflow responsive-img');
   drawer.viewbox(0, 0, size, size);
   drawer.attr({
-    preserveAspectRatio: "xMidYMid meet",
-    id: "penta",
+    preserveAspectRatio: 'xMidYMid meet',
+    id: 'penta'
   });
 
   drawer.data({ size: size });
@@ -29,7 +58,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let board = math.draw(drawer, size, { shift: true });
 
   Array.prototype.slice
-    .call(document.querySelectorAll("[data-id]"))
+    .call(document.querySelectorAll('[data-id]'))
     .map(function (element) {
       element.onclick = (evt) => {
         console.log(`You have clicked the element ${this.dataset.id}`);

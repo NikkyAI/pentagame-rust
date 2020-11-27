@@ -1,6 +1,7 @@
 // imports
 use crate::frontend::errors::UserError;
 use crate::frontend::routes::DbPool;
+use crate::ws::errors::WebsocketError;
 use actix_web::web::Data;
 use diesel::{r2d2::ConnectionManager, PgConnection};
 use r2d2::PooledConnection;
@@ -15,7 +16,6 @@ type DbConnection = PooledConnection<ConnectionManager<PgConnection>>;
  removes trailing null characters from String
  Required for db operations, because Postgresql TEXT field doesn't support tailing NULL characters
 */
-
 pub fn zero_trim(s: &String) -> String {
     s.trim_matches(char::from(0)).to_owned()
 }
@@ -36,5 +36,12 @@ pub fn acquire_connection_api(pool: &Data<DbPool>) -> Result<DbConnection, APIEr
         Err(_) => Err(APIError::DataBasePoolError {
             message: "Failed to acquire connection to database".to_owned(),
         }),
+    }
+}
+
+pub fn acquire_connection_ws(pool: &DbPool) -> Result<DbConnection, WebsocketError> {
+    match pool.get() {
+        Ok(connection) => Ok(connection),
+        Err(_) => Err(WebsocketError::InternalError {}),
     }
 }

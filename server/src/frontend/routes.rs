@@ -130,9 +130,13 @@ pub async fn get_game_overview(id: Option<SlimUser>, pool: Data<DbPool>) -> User
     // acquire a connection
     let conn = acquire_connection_user(&pool)?;
 
+    println!("1");
+
     // this unfortunaly blocking due to the result limitations of the cache.
     //  Though this should only take a maximum of 2-8ms when building first time and even less when hitting cache (20s lifetime)
     let games = get_cached_games(&conn, 0);
+
+    println!("2");
 
     UserError::wrap_template(templates::GamesOverviewTemplate { id, games }.into_response())
 }
@@ -166,13 +170,21 @@ pub async fn post_create_game(
     };
 
     // freeing thread because diesel doesn't support async net
-    let gid = block(move || create_game(&conn, data.name.clone(), data.description.clone(), public, &user))
-        .await
-        .map_err(|e| {
-            eprintln!("{}", e);
-            HttpResponse::InternalServerError().finish()
-        })
-        .expect("The Database insertion failed unexpectedly");
+    let gid = block(move || {
+        create_game(
+            &conn,
+            data.name.clone(),
+            data.description.clone(),
+            public,
+            &user,
+        )
+    })
+    .await
+    .map_err(|e| {
+        eprintln!("{}", e);
+        HttpResponse::InternalServerError().finish()
+    })
+    .expect("The Database insertion failed unexpectedly");
 
     Ok(redirect(&format!("/games/view/{}", gid)))
 }

@@ -1,6 +1,7 @@
-use crate::api::{routes as api_routes, ws::GameServer};
+use crate::api::routes as api_routes;
 use crate::config::{DatabaseConfig, CONFIG, SECRET_KEY};
 use crate::frontend::routes;
+use crate::ws::{actor::GameServer, routes as ws_routes};
 use actix::Actor;
 use actix_files as fs;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
@@ -29,8 +30,13 @@ pub async fn main() -> Result<()> {
     // clone host for server bind
     let server_bind = CONFIG.server.ip.clone();
 
+    // db pool
+    let pool = DatabaseConfig::init_pool(CONFIG.clone())
+        .expect("Failed to acquire database connection pool");
+
     // base graph
-    let g = Graph::construct_graph();
+    let g = Graph::construct_graph()
+        .expect("Empty graph failed construction when starting web server actor");
 
     // initialize actix-web server
     println!("Binding server to http://{}", &host);
@@ -41,8 +47,7 @@ pub async fn main() -> Result<()> {
             Err(_) => panic!("CRITICAL: Failed to initialize sodiumoxide"),
         }
         App::new()
-            .configure(DatabaseConfig::add_pool)
-            .data(g.clone())
+            .data(pool.clone())
             .wrap(Compress::new(ContentEncoding::Br)) // enable brotli compression for application
             .wrap(IdentityService::new(
                 CookieIdentityPolicy::new(&SECRET_KEY.clone())
@@ -64,10 +69,11 @@ pub async fn main() -> Result<()> {
             )
             .service(
                 web::scope("/games")
+                    .data(g.clone())
                     .service(
                         web::resource("/ws/")
-                            .to(api_routes::game_route)
-                            .data(server.clone()),
+                            .data(server.clone())
+                            .to(ws_routes::game_route),
                     )
                     .route("/join/{id}", web::get().to(routes::get_game_join))
                     .route("/", web::get().to(routes::get_game_overview))
@@ -83,9 +89,16 @@ pub async fn main() -> Result<()> {
                     .route("/register", web::get().to(routes::get_register_user))
                     .route("/register", web::post().to(routes::post_register_user)),
             )
-            .service(web::scope("/api").service(
-                web::scope("/games").route("/info", web::get().to(api_routes::get_game_meta)),
-            ))
+            .service(
+                web::scope("/api")
+                    .service(
+                        web::scope("/auth").route("/login", web::post().to(api_routes::post_login)),
+                    )
+                    .service(
+                        web::scope("/games")
+                            .route("/info", web::get().to(api_routes::get_game_meta)),
+                    ),
+            )
             .route("/", web::get().to(routes::get_index))
             .default_service(web::route().to(routes::get_error_404))
     })

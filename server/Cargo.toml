@@ -5,39 +5,39 @@ authors = ["Cobalt <Chaosthe0rie@protonmail.com>"]
 edition = "2018"
 
 [dependencies]
+actix = "0.10"
+actix-identity = "0.3.1"
+actix-files = "0.4.0"
 actix-web = { version = "3", default-features = false, features = [
     "compress",
     "secure-cookies",
 ] }
 actix-web-actors = "3"
-actix-files = "0.4.0"
-actix = "0.10"
 askama = { version = "0.10", default-features = false, features = [
     "with-actix-web",
     "mime",
     "mime_guess",
 ] }
 askama_actix = "0.11.1"
+cached = "~0.20"
+chrono = "0.4.19"
+clap = "2.33.3"
+derive_more = "0.99.11"
 diesel = { version = "1.4.5", features = [
     "postgres",
     "r2d2",
     "uuid",
     "chrono"
 ] }
-r2d2 = "0.8.9"
-serde = { version = "1.0", features = ["derive"], default-features = false }
-toml = "0.5.7"
-sodiumoxide = "0.2.6"
-uuid = { version = ">=0.2.0, <0.7.0", features = ["serde", "v4"] }
-clap = "2.33.3"
-derive_more = "0.99.11"
-chrono = "0.4.19"
-actix-identity = "0.3.1"
 futures = "0.3.6"
-serde_json = "^1.0"
-time = "0.2.22"
-cached = "~0.20"
 hashbrown = { version = "0.9.1", features = ["serde", "ahash-compile-time-rng"] }
+lazy_static = "1.4"
 pentagame_logic = { path = "logic", version = "0.1.0", default-features = false }
 rand = "0.7.3"
-lazy_static = "1.4"
+r2d2 = "0.8.9"
+serde = { version = "1.0", features = ["derive"], default-features = false }
+serde_json = "^1.0"
+sodiumoxide = "0.2.6"
+toml = "0.5.7"
+time = "0.2.22"
+uuid = { version = ">=0.2.0, <0.7.0", features = ["serde", "v4"] }

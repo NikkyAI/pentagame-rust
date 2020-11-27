@@ -1,4 +1,6 @@
-use super::ws::{Connect, Disconnect, GameServer, Message};
+use super::actor::{Connect, Disconnect, GameServer, Message};
+use super::errors::{MESSAGE_FORMAT_ERROR, UNIMPLEMENTED_ERROR};
+use crate::db::model::SlimUser;
 use actix::prelude::*;
 use actix_web_actors::ws;
 use hashbrown::HashMap;
@@ -6,9 +8,9 @@ use serde::Serialize;
 use serde_json::to_string;
 use std::time::{Duration, Instant};
 
-/// How often heartbeat pings are sent
+// How often heartbeat pings are sent
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
-/// How long before lack of client response causes a timeout
+// How long before lack of client response causes a timeout
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Serialize, Clone, Debug)]
@@ -18,27 +20,29 @@ struct ServerMessage {
 }
 
 pub struct WsGameSession {
-    /// unique session id (== user id)
+    // unique session id (== user id)
     pub id: usize,
-    /// Client must send ping at least once per 30 seconds (CLIENT_TIMEOUT),
-    /// otherwise we drop connection.
+    // Client must send ping at least once per 30 seconds (CLIENT_TIMEOUT),
+    // otherwise we drop connection.
     pub hb: Instant,
-    /// joined game
+    // joined game
     pub game: i32,
-    /// Game server
+    // Game server
     pub addr: Addr<GameServer>,
+    // axtix identity bound
+    pub cid: SlimUser,
 }
 
 impl Actor for WsGameSession {
     type Context = ws::WebsocketContext<Self>;
 
-    /// Method is called on actor start.
-    /// We register ws session with GameServer
+    // Method is called on actor start.
+    // We register ws session with GameServer
     fn started(&mut self, ctx: &mut Self::Context) {
         // we'll start heartbeat process on session start.
         self.hb(ctx);
 
-        // register addres for server actor
+        // register address for server actor
         let addr = ctx.address();
         self.addr
             .send(Connect {
@@ -47,12 +51,15 @@ impl Actor for WsGameSession {
             .into_actor(self)
             .then(|res, act, ctx| {
                 match res {
-                    Ok(res) => act.id = res.expect("Awesome"),
+                    Ok(res) => {
+                        act.id =
+                            res.expect("The game server failed to acquire a session fatal error");
+                    }
                     // something is wrong with game server
                     Err(why) => {
                         eprintln!("The gamserver crashed: {:?}", why);
                         ctx.stop()
-                    },
+                    }
                 }
                 fut::ready(())
             })
@@ -66,7 +73,7 @@ impl Actor for WsGameSession {
     }
 }
 
-/// Handle messages from game server, we simply send it to peer websocket
+// Handle messages from game server, we simply send it to peer websocket
 impl Handler<Message> for WsGameSession {
     type Result = ();
 
@@ -75,14 +82,13 @@ impl Handler<Message> for WsGameSession {
     }
 }
 
-/// WebSocket message handler
+// WebSocket message handler
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsGameSession {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         let msg = match msg {
             Err(why) => {
                 eprintln!("Error: {:?}", why);
-                ctx.stop();
-                return;
+                return ctx.stop();
             }
             Ok(msg) => msg,
         };
@@ -95,12 +101,17 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsGameSession {
             ws::Message::Pong(_) => {
                 self.hb = Instant::now();
             }
-            ws::Message::Text(text) => {
-                println!("Recieved: {}", text)
-            }
-            ws::Message::Binary(_) => {
-                // No support
-            }
+            ws::Message::Text(text) => match serde_json::from_str::<Message>(&text) {
+                Ok(action) => {
+                    // see action mapping in actors::ClientMessage
+                    match action.action {
+                        1 => (),
+                        _ => ctx.text(UNIMPLEMENTED_ERROR.clone()),
+                    };
+                }
+                Err(_) => ctx.text(MESSAGE_FORMAT_ERROR.clone()),
+            },
+            ws::Message::Binary(_) => ctx.text(UNIMPLEMENTED_ERROR.clone()),
             ws::Message::Close(reason) => {
                 ctx.close(reason);
                 ctx.stop();
@@ -114,9 +125,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsGameSession {
 }
 
 impl WsGameSession {
-    /// helper method that sends ping to client every second.
-    ///
-    /// also this method checks heartbeats from client
+    // helper method that sends ping to client every second.
+    //
+    // also this method checks heartbeats from client
     fn hb(&self, ctx: &mut ws::WebsocketContext<Self>) {
         ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
             // check client heartbeats

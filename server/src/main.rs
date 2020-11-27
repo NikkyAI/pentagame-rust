@@ -2,12 +2,6 @@
 #[macro_use]
 extern crate diesel;
 #[macro_use]
-extern crate actix_web;
-#[macro_use]
-extern crate cached;
-#[macro_use]
-extern crate uuid;
-#[macro_use]
 extern crate lazy_static;
 
 // includes
@@ -17,6 +11,7 @@ mod config;
 mod db;
 mod frontend;
 mod server;
+mod ws;
 
 // imports
 use crate::config::DEFAULT_CONFIG_NAME;
