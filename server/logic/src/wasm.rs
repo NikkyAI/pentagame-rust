@@ -1,8 +1,6 @@
 use super::models::Game;
 #[cfg(feature = "wasm")]
-use wasm_bindgen::{prelude::*, JsCast};
-#[cfg(feature = "wasm")]
-use web_sys::{ErrorEvent, MessageEvent, WebSocket};
+use wasm_bindgen::prelude::*;
 
 #[cfg(feature = "wasm")]
 macro_rules! console_log {

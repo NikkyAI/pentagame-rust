@@ -1,4 +1,4 @@
-use crate::db::model::{Game, SlimUser};
+use crate::db::model::{Game, SlimUser, User};
 use askama_actix::Template;
 use uuid::Uuid;
 
@@ -62,6 +62,13 @@ pub struct UserLoginTemplate {
     pub password: String,
     pub cookie_error: bool,
     pub username_error: bool,
+}
+
+#[derive(Template)]
+#[template(path = "users/settings.html")]
+pub struct UserSettingsTemplate {
+    pub id: Option<SlimUser>,
+    pub user: User,
 }
 
 #[derive(Template)]

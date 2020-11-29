@@ -1,20 +1,16 @@
 module.exports = {
   safelist: [
-    "ripple-surface",
-    "ripple-wave",
-    "active",
-    "collapse",
-    "collapsed",
-    "show",
-    "hide",
-    "mr-0",
-    "form-notch",
-    "bg-warning",
-    "form-notch-middle",
-    "form-notch-trailing",
-    "form-notch-leading",
-    "collapsing",
-    "title-white",
+    'ripple-surface',
+    'ripple-wave',
+    'active',
+    'collapse',
+    'collapsed',
+    'show',
+    'hide',
+    'fade',
+    'close',
+    'modal-backdrop',
+    'w-75'
   ],
-  variables: true,
+  variables: true
 };

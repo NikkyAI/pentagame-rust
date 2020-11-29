@@ -1,8 +1,12 @@
-/* Sidebar */
-$sidebar-width: 15rem;
+/*
+variables.scss Frontend stylesheet for pentagame
+Should be able to be left out
+@license GPL v3.0 or newer @ Cobalt <https://cobalt.rocks>
+*/
 
-// colors from https://mdbootstrap.com/docs/standard/content-styles/colors/
-// there"s been some problems with importing them for me
+// change this once a fully qualified domain name is available
+$domain: 'http://localhost:8080';
+
 $dark: #262626;
 $darker: darken($dark, 5);
 $danger: #f93154;

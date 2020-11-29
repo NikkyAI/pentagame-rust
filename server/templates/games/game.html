@@ -1,7 +1,7 @@
 {% extends "base.html" %} {% block title %} Overview {% endblock %} {% block
 content %}
 
-<div class="row h-100" style="min-height: 80vh;">
+<div class="row h-100" style="min-height: 80vh">
   <div class="col-md-2">
     <div class="card bg-dark text-white">
       <div class="card-body">
@@ -67,6 +67,37 @@ content %}
   </div>
 </div>
 
+<!-- Vertically centered modal -->
+<div
+  class="modal fade"
+  data-backdrop="static"
+  id="myModal"
+  data-keyboard="false"
+>
+  <div class="modal-dialog modal-fullscreen-sm-down modal-dialog-centered">
+    <div class="modal-content bg-dark">
+      <div class="modal-body p-3">
+        <h1
+          class="title-white mb-3 text-white text-center"
+          id="staticBackdropLabel"
+        >
+          Connecting to Game
+        </h1>
+        <div class="progress">
+          <div
+            id="connection-progress"
+            class="progress-bar w-50"
+            role="progressbar"
+            aria-valuenow="50"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          ></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %} {% block includes %}
-<script src="/static/js/game.js"></script>
+<script src="/static/dist/game.js"></script>
 {% endblock %}

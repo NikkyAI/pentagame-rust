@@ -87,7 +87,8 @@ pub async fn main() -> Result<()> {
                     .route("/login", web::post().to(routes::post_users_login))
                     .route("/logout", web::get().to(routes::get_logout_user))
                     .route("/register", web::get().to(routes::get_register_user))
-                    .route("/register", web::post().to(routes::post_register_user)),
+                    .route("/register", web::post().to(routes::post_register_user))
+                    .route("/settings", web::get().to(routes::get_settings_user)),
             )
             .service(
                 web::scope("/api")

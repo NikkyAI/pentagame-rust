@@ -6,17 +6,20 @@
   "author": "Cobalt <cobalt.rocks>",
   "license": "GPL-3.0-or-later",
   "scripts": {
-    "compile": "bash ../../scripts/compile.sh",
+    "compile": "bash ../../scripts/compile.sh && webpack",
     "lint": "stylelint scss/*.scss"
   },
   "devDependencies": {
     "purgecss": "^3.0.0",
     "sass": "^1.29.0",
     "stylelint": "^13.7.2",
-    "stylelint-config-standard": "^20.0.0"
+    "stylelint-config-standard": "^20.0.0",
+    "webpack": "^4.42.0",
+    "webpack-cli": "^3.3.3"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.15.1",
-    "mdb-ui-kit": "^2.0.0"
+    "@popperjs/core": "^2.5.4",
+    "bootstrap": "5.0.0-alpha3"
   }
 }

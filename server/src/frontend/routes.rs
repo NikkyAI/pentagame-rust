@@ -130,13 +130,9 @@ pub async fn get_game_overview(id: Option<SlimUser>, pool: Data<DbPool>) -> User
     // acquire a connection
     let conn = acquire_connection_user(&pool)?;
 
-    println!("1");
-
     // this unfortunaly blocking due to the result limitations of the cache.
     //  Though this should only take a maximum of 2-8ms when building first time and even less when hitting cache (20s lifetime)
     let games = get_cached_games(&conn, 0);
-
-    println!("2");
 
     UserError::wrap_template(templates::GamesOverviewTemplate { id, games }.into_response())
 }
@@ -350,6 +346,31 @@ pub async fn get_logout_user(id: Identity) -> UserResponse {
     // TODO: ADD Alert option for index
 
     Ok(redirect("/"))
+}
+
+pub async fn get_settings_user(id: Option<SlimUser>, pool: Data<DbPool>) -> UserResponse {
+    let conn = acquire_connection_user(&pool)?;
+    let identity = guard_with_user(id)?;
+
+    let sacrifice = identity.username.clone();
+    let user = block(move || get_user_by_username(&conn, sacrifice))
+        .await
+        .map_err(|e| {
+            eprintln!("{}", e);
+            return UserError::InternalError {
+                code: 1,
+                message: "Something unexpected happened".to_owned(),
+            };
+        })?
+        .unwrap();
+
+    UserError::wrap_template(
+        templates::UserSettingsTemplate {
+            id: Some(identity),
+            user,
+        }
+        .into_response(),
+    )
 }
 
 pub async fn get_register_user() -> UserResponse {

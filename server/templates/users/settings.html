@@ -1,0 +1,142 @@
+{% extends "base.html" %} {% block content %}
+<div class="container">
+  <h1 class="title mb-3">Settings</h1>
+
+  <form
+    class="container mb-4"
+    action="/users/settings/change/username"
+    method="POST"
+  >
+    <h2 class="title mb-3">Username</h2>
+    <p>
+      Your username is limited to 1 - 40 chars and may only contain ascii
+      characters
+    </p>
+
+    <div class="input-name mb-3">
+      <input
+        type="text"
+        name="username"
+        placeholder=" Username"
+        id="username"
+        class="form-control id"
+        style="max-width: 40rem !important"
+        value="{{ user.username }}"
+      />
+      <span
+        class="underline-animation"
+        style="max-width: 40rem !important"
+      ></span>
+    </div>
+
+    <button class="btn btn-dark" type="submit">
+      Update Username <i class="fas fa-arrow-circle-right"></i>
+    </button>
+  </form>
+
+  <form
+    class="mb-3 container"
+    actions="/users/settings/change/password"
+    method="POST"
+  >
+    <h2 class="title mb-3">Password</h2>
+    <p>
+      Your password should consist of at least one uppercase and one lowercase
+      letter as well as a number but should only use ascii characters. Your
+      password also must be longer than 6 chars.
+    </p>
+
+    <div class="input-name mb-3">
+      <input
+        type="password"
+        id="old-password"
+        name="old-password"
+        autocomplete="current-password"
+        placeholder=" Current Password"
+        aria-placeholder="Current password of your user account"
+        class="form-control"
+      />
+      <span
+        class="underline-animation"
+        style="max-width: 40rem !important"
+      ></span>
+    </div>
+
+    <div class="input-name mb-3">
+      <input
+        type="password"
+        id="new-password"
+        autocomplete="new-password"
+        name="new-password"
+        placeholder=" New Password"
+        aria-placeholder="New Password for your user account"
+        class="form-control id"
+      />
+      <span
+        class="underline-animation"
+        style="max-width: 40rem !important"
+      ></span>
+    </div>
+
+    <button class="btn btn-dark" type="submit">
+      Update Password <i class="fas fa-arrow-circle-right"></i>
+    </button>
+  </form>
+
+  <form class="mb-3 container" action="/users/settings/change/meta">
+    <h2 class="title mb-3">Status</h2>
+    <p>
+      With your status you can tell other people how you feel, what you're doing
+      or what you're up to at the moment.
+    </p>
+
+    <div class="input-name mb-3">
+      <textarea
+        class="form-control id"
+        id="status"
+        name="status"
+        rows="4"
+        placeholder=" Your status"
+        value="{{ user.status }}"
+      ></textarea>
+      <span class="underline-animation"></span>
+    </div>
+
+    <button class="btn btn-dark" type="submit">
+      Update Status <i class="fas fa-arrow-circle-right"></i>
+    </button>
+  </form>
+
+  <div class="container mt-4 d-flex justify-content-center mb-3">
+    <div class="card bg-danger flex-shrink-1">
+      <div class="card-header text-white text-center">Dangerous Section</div>
+
+      <div class="card-body">
+        <div
+          class="btn-group"
+          role="group"
+          aria-label="Dangerous Section button group"
+        >
+          <button
+            type="button"
+            class="btn btn-outline-light"
+            id="delete-account"
+          >
+            Delete Account
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-light"
+            id="archive-account"
+          >
+            Archive Account
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %} {% block title %}User Settings{% endblock %} {% block includes %}
+<script src="/static/dist/settings.js"></script>
+{% endblock %}

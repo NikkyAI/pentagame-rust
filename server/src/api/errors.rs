@@ -59,13 +59,10 @@ impl APIError {
     pub fn wrap_error<T>(res: Result<T, WebError>, code: u16) -> Result<T, APIError> {
         match res {
             Ok(response) => Ok(response),
-            Err(why) => {
-                eprintln!("Wrapped Response failed gracefully: {:?}", why);
-                Err(APIError::InternalError {
-                    code,
-                    message: "Internal Error".to_string(),
-                })
-            }
+            Err(why) => Err(APIError::InternalError {
+                code,
+                message: "Internal Error".to_string(),
+            }),
         }
     }
 }

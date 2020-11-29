@@ -31,14 +31,41 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   /*
+    Bind modal
+  */
+  var myModal = new bootstrap.Modal(document.getElementById('myModal'), {
+    show: true,
+    backdrop: 'static',
+    keyboard: false,
+    focus: true
+  });
+  myModal.show();
+  let close = () => {
+    myModal.hide();
+  };
+
+  // demo
+  setTimeout(() => {
+    let progress = document.getElementById('connection-progress');
+    progress.classList.remove('w-50');
+    progress.classList.add('w-75');
+    progress.setAttribute('aria-valuenow', '75');
+  }, 2000);
+  setTimeout(() => {
+    let progress = document.getElementById('connection-progress');
+    progress.classList.remove('w-75');
+    progress.classList.add('w-100');
+    progress.setAttribute('aria-valuenow', '100');
+  }, 3000);
+  setTimeout(close, 3500);
+
+  /*
    This doesn't do authentication as the request is handled with SessionCookies
    */
   let gsocket = new WebSocket('ws://localhost:8080/games/ws/');
   gsocket.onopen = (event) => {
     gsocket.send(JSON.stringify({ action: 1, data: { key: 'val' } }));
   };
-
-  console.log(document.cookie);
 
   // draw the initial board
   const size = 1000;

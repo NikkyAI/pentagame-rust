@@ -57,50 +57,67 @@
     <meta property="og:description" content="Pentagame Online client & Docs" />
   </head>
   <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div class="container-fluid mr-auto">
+    <!-- Image and text -->
+    <nav class="navbar navbar-dark navbar-expand-lg bg-dark sticky-top">
+      <div class="container-fluid">
         <a class="navbar-brand" href="/">
           <img
             src="/static/images/brand.svg"
+            alt=""
+            width="30"
             height="30"
-            alt="Pentagame brand"
-            loading="lazy"
+            class="d-inline-block align-top"
           />
-          Pentagame
+          Pentagame Online
         </a>
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-toggle="collapse"
-          data-target="#navbarNav"
-          aria-controls="navbarNav"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav">
-            <li class="nav-item">
-              <a
-                class="nav-link"
-                aria-current="page"
-                href="https://github.com/Penta-Game/pentagame"
-              >
-                Code
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" aria-current="page" href="/games/"> Game </a>
-            </li>
-          </ul>
+
+        <div class="ml-auto">
+          <div class="btn-group ml-auto dropleft">
+            <button
+              type="button"
+              class="btn btn-dark"
+              data-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <i class="fas fa-user-circle"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-dark">
+              {% match id %} {% when Some with (id) %}
+              <li>
+                <a class="dropdown-item" href="/users/view/{{ id.id }}">
+                  <i class="fas fa-user-alt"></i>
+                  Account
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="/users/settings">
+                  <i class="fas fa-sliders-h"></i>
+                  Settings
+                </a>
+              </li>
+              <li>
+                <hr class="dropdown-divider" />
+              </li>
+              <li>
+                <a class="dropdown-item" href="/users/logout">
+                  <i class="fas fa-sign-out-alt"></i>
+                  Logout
+                </a>
+              </li>
+              {% when None %}
+              <li>
+                <a class="dropdown-item" href="/users/login">
+                  <i class="fas fa-sign-in-alt"></i>
+                  Login
+                </a>
+              </li>
+              {% endmatch %}
+            </ul>
+          </div>
         </div>
       </div>
-      {% match id.clone() %} {% when Some with (id) %}
-      <div class="container-fluid mr-0 ml-auto">
-        Profile
-      </div>
-      {% when None %} {% endmatch %} {% block navbar_extended %}{% endblock %}
+
+      {% block navbar_extended %}{% endblock %}
     </nav>
 
     <!-- Content -->
@@ -126,17 +143,15 @@
         <a href="https://cobalt.rocks/pages/contact/" class="copyright">
           Cobalt
         </a>
-        <a class="ml-1 text-white" href="/content/cookies">
-          - Cookies
-        </a>
+        <a class="ml-1 text-white" href="/content/cookies"> - Cookies </a>
       </div>
       <!-- #Copyright -->
     </footer>
     <!-- #Footer -->
 
     <!-- JS -->
-    <script src="/static/node_modules/mdb-ui-kit/js/mdb.min.js"></script>
-    <script src="/static/js/index.js"></script>
+    <script src="/static/node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="/static/dist/main.js"></script>
 
     <!-- Page specific resources -->
     {% block includes %}{% endblock %}
