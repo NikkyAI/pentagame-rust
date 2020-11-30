@@ -10,12 +10,6 @@ if ! command -v cargo &>/dev/null; then
     exit 1
 fi
 
-# Check if wasm-pack is installed and if not install it
-if ! command -v wasm-pack; then
-    echo "You need wasm-pack to build the logic libraries. (use: cargo install wasm-pack)"
-    exit 1
-fi
-
 # Check if GNU make is installed
 if ! command -v make &>/dev/null; then
     echo "You need GNU make to build pentagame."
@@ -44,13 +38,6 @@ fi
 
 # Start setup
 echo "Starting with setup"
-echo "Descending into server/logic/ to build pentagame-logic library"
-cd server/logic/
-
-wasm-pack build
-cd pkg/ && yarn link && cd ../../static/ && yarn link "pentagame_logic" && cd ../../ # Npm is always installed if yarn is installed
-
-echo "Done building. Ascending back"
 
 echo "Descending into server and start building"
 

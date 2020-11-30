@@ -32,7 +32,6 @@ diesel = { version = "1.4.5", features = [
 futures = "0.3.6"
 hashbrown = { version = "0.9.1", features = ["serde", "ahash-compile-time-rng"] }
 lazy_static = "1.4"
-pentagame_logic = { path = "logic", version = "0.1.0", default-features = false }
 rand = "0.7.3"
 r2d2 = "0.8.9"
 serde = { version = "1.0", features = ["derive"], default-features = false }

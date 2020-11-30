@@ -1,7 +1,7 @@
 {% extends "base.html" %} {% block title %} Overview {% endblock %} {% block
 content %}
 
-<div class="row h-100" style="min-height: 80vh">
+<div class="row h-100" style="min-height: 80vh;">
   <div class="col-md-2">
     <div class="card bg-dark text-white">
       <div class="card-body">
@@ -71,18 +71,16 @@ content %}
 <div
   class="modal fade"
   data-backdrop="static"
-  id="myModal"
+  id="loading-modal"
   data-keyboard="false"
 >
   <div class="modal-dialog modal-fullscreen-sm-down modal-dialog-centered">
     <div class="modal-content bg-dark">
       <div class="modal-body p-3">
-        <h1
-          class="title-white mb-3 text-white text-center"
-          id="staticBackdropLabel"
-        >
+        <h1 class="title-white mb-3 text-white text-center" id="modal-title">
           Connecting to Game
         </h1>
+        <p id="modal-content" class="text-white">Loading</p>
         <div class="progress">
           <div
             id="connection-progress"

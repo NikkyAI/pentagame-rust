@@ -69,6 +69,9 @@ pub struct UserLoginTemplate {
 pub struct UserSettingsTemplate {
     pub id: Option<SlimUser>,
     pub user: User,
+    pub username_error: bool,
+    pub password_error: bool,
+    pub status_error: bool,
 }
 
 #[derive(Template)]

@@ -1,5 +1,12 @@
-import { Point, Figure } from "./core.js";
-import { SVGCircleElement } from "@svgdotjs/svg.js";
+import {
+  /* webpackMode: "eager" */
+  Point,
+  Figure,
+} from "./core.js";
+import {
+  /* webpackMode: "eager" */
+  SVGCircleElement,
+} from "@svgdotjs/svg.js";
 
 export class PentaMath {
   /*

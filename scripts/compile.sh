@@ -8,10 +8,4 @@
 echo "Compiling SCSS -> CSS"
 sass --style=compressed --load-path scss/ --load-path node_modules/ scss/main.scss css/app.css
 purgecss --config purgecss.config.js --css css/app.css --content "../templates/**/*.html" --output css/
-
-echo "Building WASM & Compiling JS"
-cd ../logic/
-npm run build
-cd ../static/
-
 echo "Done"

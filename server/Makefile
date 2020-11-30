@@ -1,14 +1,14 @@
 # Complete Makefile based of gitlab.com/C0balt/oxidized-cms wth slight modifications
 
 # Allow command line args to be passed instead of serial execution of steps
-# Based off https://stackoverflow.com/a/14061796 
+# Based off https://stackoverflow.com/a/14061796
 ifeq (db-migration,$(firstword $(MAKECMDGOALS)))
   RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
   $(eval $(RUN_ARGS):;@:)
 endif
 
-setup: 
-	bash ../scripts/server-setup.sh
+setup:
+	bash ../scripts/full-setup.sh
 db-setup:
 	bash ../scripts/diesel.sh
 .PHONY: db-migration
@@ -19,19 +19,19 @@ db-print:
 db-reset:
 	bash ../scripts/diesel.sh reset
 serve:
-	cargo b --release 
+	cargo b --release
 	./target/release/pentagame serve
 build:
-	cargo b --release 
-	cd static/ &&  yarn run compile
+	cargo b --release
+	cd static/ &&  yarn run production-compile
 generate:
-	cargo b --release 
+	cargo b --release
 	./target/release/pentagame generate
 dev-generate:
 	cargo b
 	./target/debug/pentagame generate
 dev-build:
-	cargo b 
+	cargo b
 	cd static/ && yarn run compile
 ci-build:
 	cargo build --verbose

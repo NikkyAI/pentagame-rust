@@ -8,7 +8,7 @@ use actix_identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{http::ContentEncoding, middleware::Compress, web, App, HttpServer};
 #[allow(unused_imports)] // Required as trait in scope for template.into_response()
 use askama_actix::TemplateIntoResponse;
-use pentagame_logic::graph::Graph;
+use crate::graph::graph::Graph;
 use sodiumoxide::init;
 use std::io::Result;
 use time::Duration;
@@ -88,7 +88,11 @@ pub async fn main() -> Result<()> {
                     .route("/logout", web::get().to(routes::get_logout_user))
                     .route("/register", web::get().to(routes::get_register_user))
                     .route("/register", web::post().to(routes::post_register_user))
-                    .route("/settings", web::get().to(routes::get_settings_user)),
+                    .route("/settings", web::get().to(routes::get_settings_user))
+                    .route(
+                        "/settings/change",
+                        web::post().to(routes::post_settings_user),
+                    ),
             )
             .service(
                 web::scope("/api")

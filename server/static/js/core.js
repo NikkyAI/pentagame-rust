@@ -1,77 +1,7 @@
-/* eslint-disable no-undef */
-const typeOf = (obj) => {
-  return {}.toString
-    .call(obj)
-    .match(/\s(\w+)/)[1]
-    .toLowerCase();
-};
-
-function checkTypes(args, types) {
-  args = [].slice.call(args);
-  for (var i = 0; i < types.length; ++i) {
-    if (typeOf(args[i]) != types[i]) {
-      throw new TypeError("param " + i + " must be of type " + types[i]);
-    }
-  }
-}
-
-let getJSONP = (obj) => {
-  return new Promise((resolve, reject) => {
-    let xhr = new XMLHttpRequest();
-    xhr.open(obj.method || "GET", obj.url);
-    if (obj.headers) {
-      Object.keys(obj.headers).forEach((key) => {
-        xhr.setRequestHeader(key, obj.headers[key]);
-      });
-    }
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(JSON.parse(xhr.response));
-      } else {
-        reject(xhr.statusText);
-      }
-    };
-    xhr.onerror = () => reject(xhr.statusText);
-    xhr.send(obj.body);
-  });
-};
-
-function download(filename, text) {
-  var element = document.createElement("a");
-  element.setAttribute(
-    "href",
-    "data:text/plain;charset=utf-8," + encodeURIComponent(text)
-  );
-  element.setAttribute("download", filename);
-
-  element.style.display = "none";
-  document.body.appendChild(element);
-
-  element.click();
-
-  document.body.removeChild(element);
-}
-
-const destructureID = (id) => {
-  if (typeOf(id) === "number") {
-    return id;
-  }
-  id = id.split("-");
-  const type = id[0];
-  if (["corner", "junction", "c", "j"].include(type)) {
-    return {
-      type: type,
-      id: id[1],
-    };
-  } else if (type === "stop" || type === "s") {
-    return {
-      type: stop,
-      start: id[1],
-      counter: id[2],
-      end: id[3],
-    };
-  }
-};
+import {
+  /* webpackMode: "eager" */
+  destructureID,
+} from "./utils.js";
 
 class Base {
   constructor(data) {
@@ -193,4 +123,4 @@ class Field extends Point {
   }
 }
 
-export { Point, Figure, Stop, Field, getJSONP, download };
+export { Point, Figure, Stop, Field };

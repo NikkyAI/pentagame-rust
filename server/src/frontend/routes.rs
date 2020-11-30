@@ -368,9 +368,61 @@ pub async fn get_settings_user(id: Option<SlimUser>, pool: Data<DbPool>) -> User
         templates::UserSettingsTemplate {
             id: Some(identity),
             user,
+            username_error: false,
+            password_error: false,
+            status_error: false,
         }
         .into_response(),
     )
+}
+
+pub async fn post_settings_user(
+    id: Option<SlimUser>,
+    pool: Data<DbPool>,
+    data: Form<forms::SettingsForm>,
+) -> UserResponse {
+    let conn = acquire_connection_user(&pool)?;
+    let identity = guard_with_user(id)?;
+
+    let sacrifice = identity.username.clone();
+    let user = block(move || get_user_by_username(&conn, sacrifice))
+        .await
+        .map_err(|e| {
+            eprintln!("{}", e);
+            return UserError::InternalError {
+                code: 1,
+                message: "Something unexpected happened".to_owned(),
+            };
+        })?
+        .unwrap();
+
+    match data.0.password {
+        Some(new) => match data.0.old_password {
+            Some(old) => {
+                if old == new {
+                    return UserError::wrap_template(
+                        templates::UserSettingsTemplate {
+                            user,
+                            id: Some(identity),
+                            status_error: false,
+                            password_error: true,
+                            username_error: false,
+                        }
+                        .into_response(),
+                    );
+                }
+            }
+            None => {
+                return Err(UserError::ValidationError {});
+            }
+        },
+        None => (),
+    };
+
+    return Err(UserError::InternalError {
+        code: 4,
+        message: "Failed to respond appropiatly".to_owned(),
+    });
 }
 
 pub async fn get_register_user() -> UserResponse {

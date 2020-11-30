@@ -47,6 +47,7 @@ impl Actor for WsGameSession {
         self.addr
             .send(Connect {
                 addr: addr.recipient(),
+                uid: self.cid.id
             })
             .into_actor(self)
             .then(|res, act, ctx| {

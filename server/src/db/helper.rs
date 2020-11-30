@@ -39,9 +39,11 @@ pub fn acquire_connection_api(pool: &Data<DbPool>) -> Result<DbConnection, APIEr
     }
 }
 
-pub fn acquire_connection_ws(pool: &DbPool) -> Result<DbConnection, WebsocketError> {
+pub fn acquire_connection_ws(pool: &DbPool) -> Result<DbConnection, APIError> {
     match pool.get() {
         Ok(connection) => Ok(connection),
-        Err(_) => Err(WebsocketError::InternalError {}),
+        Err(_) => Err(APIError::DataBasePoolError {
+            message: "Failed to acquire a connection from database".to_owned(),
+        }),
     }
 }

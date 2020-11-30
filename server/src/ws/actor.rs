@@ -1,10 +1,13 @@
 use crate::api::errors::APIError;
 use crate::config::{DatabaseConfig, CONFIG};
+use crate::db::actions::{get_game, get_user_game};
+use crate::db::helper::acquire_connection_ws;
 use crate::frontend::routes::DbPool;
 use actix::prelude::*;
 use hashbrown::{HashMap, HashSet};
 use rand::{self, rngs::ThreadRng, Rng};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 // Game server sends this messages to session
 #[derive(Message, Serialize, Deserialize)]
@@ -43,6 +46,7 @@ pub struct Message {
 pub struct Connect {
     // session id (== user id)
     pub addr: Recipient<Message>,
+    pub uid: Uuid,
 }
 
 // Session is disconnected
@@ -54,7 +58,7 @@ pub struct Disconnect {
 
 // Send message to specific game
 #[derive(Message)]
-#[rtype(result = "()")]
+#[rtype(result = "Result<(), APIError>")]
 pub struct ClientMessage {
     // Id of the client session
     pub id: usize,
@@ -144,6 +148,36 @@ impl Handler<Connect> for GameServer {
         let id = self.rng.gen::<usize>() + 1_usize;
         self.sessions.insert(id, msg.addr);
 
+        // add to group
+        let conn = acquire_connection_ws(&self.pool)?;
+        let gid = match get_user_game(&conn, msg.uid) {
+            Ok(result) => match result {
+                Some(id) => id,
+                None => {
+                    return Err(APIError::ValidationError {
+                        field: "Not joined any game".to_owned(),
+                    });
+                }
+            },
+            Err(_) => {
+                return Err(APIError::InternalError {
+                    code: 3,
+                    message: "Failed to run query".to_owned(),
+                });
+            }
+        };
+
+        match self.games.get_mut(&gid) {
+            Some(game) => {
+                game.insert(id);
+            }
+            None => {
+                let mut new_game = HashSet::with_capacity(5);
+                new_game.insert(id);
+                self.games.insert(gid, new_game);
+            }
+        }
+
         // send id back
         Ok(id)
     }
@@ -175,14 +209,52 @@ impl Handler<Disconnect> for GameServer {
     }
 }
 
-// Handler for Message message.
+// Handler for ClientMessage message.
 impl Handler<ClientMessage> for GameServer {
-    type Result = ();
+    type Result = Result<(), APIError>;
 
-    fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) {
+    fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) -> Self::Result {
         match msg.action {
-            1 => (),
-            _ => (),
+            0 => {
+                let conn = acquire_connection_ws(&self.pool)?;
+                match get_game(&conn, msg.game) {
+                    Ok(result) => match result {
+                        Some((_, users)) => {
+                            let mut data = HashMap::with_capacity(users.len());
+                            users.iter().for_each(|(id, name)| {
+                                data.insert(id.to_string(), name.clone());
+                            });
+                            match self.sessions.get(&msg.id).unwrap().do_send(Message {
+                                action: msg.action,
+                                data,
+                            }) {
+                                Ok(_) => (),
+                                Err(_) => {
+                                    return Err(APIError::InternalError {
+                                        code: 4,
+                                        message: "Failed to deliver message to websocket"
+                                            .to_owned(),
+                                    });
+                                }
+                            }
+                        }
+                        None => {
+                            return Err(APIError::ValidationError {
+                                field: "Game id".to_owned(),
+                            });
+                        }
+                    },
+                    Err(_) => {
+                        return Err(APIError::ValidationError {
+                            field: "Game id".to_owned(),
+                        });
+                    }
+                }
+
+                Ok(())
+            }
+            1 => Ok(()),
+            _ => Ok(()),
         }
     }
 }

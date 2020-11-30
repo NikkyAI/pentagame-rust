@@ -27,12 +27,13 @@ pub enum UserError {
     InternalError { code: u16, message: String },
     #[display(fmt = "Authorization is required")]
     AuthorizationError {},
+    #[display(fmt = "All fields are required")]
+    ValidationError {},
 }
 
 impl ResponseError for UserError {
     fn error_response(&self) -> HttpResponse {
         eprintln!("UserError: {:?}", self.to_string());
-
 
         let response = match self.status_code() {
             StatusCode::UNAUTHORIZED => Ok(redirect("/users/login")),
@@ -71,6 +72,7 @@ impl ResponseError for UserError {
         match *self {
             UserError::InternalError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
             UserError::AuthorizationError { .. } => StatusCode::UNAUTHORIZED,
+            UserError::ValidationError { .. } => StatusCode::BAD_REQUEST,
         }
     }
 }

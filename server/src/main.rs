@@ -7,6 +7,7 @@ extern crate lazy_static;
 // includes
 mod api;
 mod auth;
+mod graph;
 mod config;
 mod db;
 mod frontend;
