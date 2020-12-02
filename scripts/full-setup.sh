@@ -42,7 +42,6 @@ echo "Starting with setup"
 echo "Descending into server and start building"
 
 cd server/
-make setup
 
 if ! test -f "pentagame.toml"; then
     echo "You need to configure pentagame.toml in server/ before building any further"
