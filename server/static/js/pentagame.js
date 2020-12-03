@@ -57,56 +57,37 @@ export class PentaMath {
     };
   }
 
-  interpretGraphData(data) {
-    console.log(data);
-    for (let i = data.figures.length; i != -1; i--) {
-      let figure = data.figures[i];
-      if (figure.position[0] > figure.position[2]) {
-        let position = [
-          figure.position[2],
-          figure.position[1],
-          figure.position[0],
-        ];
-      }
-      this.drawFigure();
-    }
-  }
-
-  drawFigure(id, FigureId, data) {
-    let element = document.getElementById(id);
+  drawFigure(FigureId, data, parent) {
     const lineWidth = (0.1 / this.constants.sizes.R) * scale;
-    if (element !== undefined) {
-      let figure = new Figure({
-        type: data["type"],
-        shape: data["shape"],
-        color: data["color"],
-        id: FigureId,
-      });
-      element = new SVGCircleElement(element);
-      figure.node = this.drawer[data["shape"]](element[data["size"]]);
-      figure.node.attr({
-        cx: element.cx,
-        cy: element.cy,
-        fill: color,
-        "stroke-width": lineWidth,
-        stroke: "#d3d3d3",
-      });
-      return figure;
-    } else {
-      throw ReferenceError("Id was not found in DOM");
-    }
+    let figure = new Figure({
+      type: data["type"],
+      shape: data["shape"],
+      color: data["color"],
+      id: FigureId,
+    });
+
+    let element = this.drawer.circle(data["size"]);
+    figure.node = this.drawer[data["shape"]](element[data["size"]]);
+    figure.node.attr({
+      cx: element.cx,
+      cy: element.cy,
+      fill: color,
+      "stroke-width": lineWidth,
+      stroke: "#d3d3d3",
+    });
+    return figure;
   }
 
   draw(drawer, scale, args) {
     // evaluate args
     if (args === undefined || args.colors === undefined) {
-      var colors = {
+      const colors = {
         fields: ["blue", "white", "green", "yellow", "red"],
         background: "#28292b",
         foreground: "#d3d3d3",
       };
     } else {
-      var colors = args.colors;
+      const colors = args.colors;
     }
 
     if (args !== undefined && args.shift !== undefined) {
@@ -268,32 +249,6 @@ export class PentaMath {
       });
       Corner.center(CornerPoints.x, CornerPoints.y);
       Corner.data({ id: i + 6 });
-      var Junction = drawer.circle(JunctionRadius);
-      Junction.attr({
-        fill: colors.foreground,
-        stroke: colors.fields[i],
-        "stroke-width": 0.75 * lineWidth,
-      });
-      Junction.center(JunctionPoints.x, JunctionPoints.y);
-      Junction.data({ id: i + 1 });
-      board.corners[i] = new Point({
-        id: i + 7,
-        x: CornerPoints.x,
-        y: CornerPoints.y,
-        next: i + 8,
-        node: Corner.node,
-        angle: CornerAngle,
-        color: colors[i],
-      });
-      board.junctions[i] = new Point({
-        id: i + 1,
-        x: JunctionPoints.x,
-        y: JunctionPoints.y,
-        next: i + 2,
-        node: Junction.node,
-        angle: JunctionAngle,
-        color: colors[i],
-      });
     }
 
     this.board = board;

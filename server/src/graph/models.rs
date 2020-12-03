@@ -2,6 +2,7 @@ use super::graph::Graph;
 use serde::{Deserialize, Serialize};
 
 // types
+// i16 is used to be translatable to PG SMALL INT 
 pub type MOVE = [i16; 7];
 pub type FIELD = [i16; 3];
 

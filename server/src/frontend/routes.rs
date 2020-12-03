@@ -3,9 +3,10 @@ use super::errors::UserError;
 use super::{forms, templates};
 use crate::auth::{guard_user, guard_with_user, verify_hash};
 use crate::db::actions::{
-    create_game, create_user, get_cached_games, get_game, get_user_by_username,
+    check_game, create_game, create_user, get_cached_games, get_game, get_user_by_username,
+    get_user_game, join_game, leave_game,
 };
-use crate::db::{helper::acquire_connection_user, model::SlimUser};
+use crate::db::model::SlimUser;
 use actix_identity::Identity;
 use actix_web::error::ErrorBadRequest;
 use actix_web::{
@@ -122,17 +123,47 @@ INFO: All routes except overview require are guarded
     /leave: Leave a game (a player may only join one game at a time. Can be changed anytime but works as architectural rate limiting)
 */
 
-pub async fn get_game_join(id: Option<SlimUser>) -> UserResponse {
-    UserError::wrap_template(templates::GameBoardTemplate { id }.into_response())
+pub async fn get_game_join(
+    id: Option<SlimUser>,
+    path: Path<(i32,)>,
+    pool: Data<DbPool>,
+) -> UserResponse {
+    // retrieve id and guard route
+    let conn = pool.get()?;
+    let uid = guard_with_user(id)?;
+
+    let gid = block(move || check_game(&conn, path.0 .0)).await?;
+
+    let conn = pool.get()?;
+
+    // check if user already joined game
+    let sacrifice = uid.id.clone();
+    match block(move || get_user_game(&conn, sacrifice)).await? {
+        Some(current_game_id) => {
+            if current_game_id != gid {
+                let sacrifice = uid.id.clone();
+                let conn = pool.get()?;
+                block(move || leave_game(&conn, sacrifice)).await?;
+                let conn = pool.get()?;
+                block(move || join_game(&conn, sacrifice, gid)).await?;
+            }
+        }
+        None => {
+            let conn = pool.get()?;
+            block(move || join_game(&conn, sacrifice, gid)).await?;
+        }
+    }
+
+    UserError::wrap_template(templates::GameBoardTemplate { id: Some(uid) }.into_response())
 }
 
 pub async fn get_game_overview(id: Option<SlimUser>, pool: Data<DbPool>) -> UserResponse {
     // acquire a connection
-    let conn = acquire_connection_user(&pool)?;
+    let conn = pool.get()?;
 
     // this unfortunaly blocking due to the result limitations of the cache.
     //  Though this should only take a maximum of 2-8ms when building first time and even less when hitting cache (20s lifetime)
-    let games = get_cached_games(&conn, 0);
+    let games = get_cached_games(&conn)?;
 
     UserError::wrap_template(templates::GamesOverviewTemplate { id, games }.into_response())
 }
@@ -157,7 +188,7 @@ pub async fn post_create_game(
 ) -> UserResponse {
     // retrieve id and guard route
     let user = guard_with_user(id.clone())?;
-    let conn = acquire_connection_user(&pool)?;
+    let conn = pool.get()?;
 
     // validates cookie checkbox
     let public = match &data.public {
@@ -175,12 +206,7 @@ pub async fn post_create_game(
             &user,
         )
     })
-    .await
-    .map_err(|e| {
-        eprintln!("{}", e);
-        HttpResponse::InternalServerError().finish()
-    })
-    .expect("The Database insertion failed unexpectedly");
+    .await?;
 
     Ok(redirect(&format!("/games/view/{}", gid)))
 }
@@ -191,23 +217,10 @@ pub async fn get_view_game(
     pool: Data<DbPool>,
 ) -> UserResponse {
     guard_user(&id)?;
-    let conn = acquire_connection_user(&pool)?;
+    let conn = pool.get()?;
     let gid = path.into_inner().0;
 
-    let result = block(move || get_game(&conn, gid))
-        .await
-        .map_err(|e| {
-            eprintln!("{}", e);
-            HttpResponse::InternalServerError().finish()
-        })
-        .expect("Optional Query returned Error after Mapping");
-
-    let gdata = match result {
-        Some(data) => data,
-        None => {
-            return get_error_404(id).await;
-        }
-    };
+    let gdata = block(move || get_game(&conn, gid)).await?;
 
     let is_host = false;
 
@@ -271,45 +284,23 @@ pub async fn post_users_login(
     }
 
     // acquiring connection from db pool
-    let conn = acquire_connection_user(&pool)?;
+    let conn = pool.get()?;
 
     /*
     I may expand the below part with fake hashing for time attack circumvention
     */
     let sacrifice = form.username.clone();
-    let result = block(move || get_user_by_username(&conn, sacrifice))
-        .await
-        .map_err(|e| {
-            eprintln!("{}", e);
-            return UserError::InternalError {
-                code: 1,
-                message: "Something unexpected happened".to_owned(),
-            };
-        });
+    let result = block(move || get_user_by_username(&conn, sacrifice)).await?;
 
     let user = match result {
-        Ok(optional) => match optional {
-            Some(user) => user,
-            None => {
-                return UserError::wrap_template(
-                    templates::UserLoginTemplate {
-                        username: form.username.clone(),
-                        password: form.password.clone(),
-                        username_error: true,
-                        cookie_error: true,
-                        id: None,
-                    }
-                    .into_response(),
-                );
-            }
-        },
-        Err(_) => {
+        Some(user) => user,
+        None => {
             return UserError::wrap_template(
                 templates::UserLoginTemplate {
                     username: form.username.clone(),
                     password: form.password.clone(),
                     username_error: true,
-                    cookie_error,
+                    cookie_error: true,
                     id: None,
                 }
                 .into_response(),
@@ -349,20 +340,25 @@ pub async fn get_logout_user(id: Identity) -> UserResponse {
 }
 
 pub async fn get_settings_user(id: Option<SlimUser>, pool: Data<DbPool>) -> UserResponse {
-    let conn = acquire_connection_user(&pool)?;
+    let conn = pool.get()?;
     let identity = guard_with_user(id)?;
 
     let sacrifice = identity.username.clone();
-    let user = block(move || get_user_by_username(&conn, sacrifice))
-        .await
-        .map_err(|e| {
-            eprintln!("{}", e);
-            return UserError::InternalError {
-                code: 1,
-                message: "Something unexpected happened".to_owned(),
-            };
-        })?
-        .unwrap();
+    let result = block(move || get_user_by_username(&conn, sacrifice)).await?;
+
+    /*
+    for the unlikely case user session has outlived user in database
+    When e.g. two sessions exist and one of them wasn't logged out on deletion
+    */
+    let user = match result {
+        Some(user) => user,
+        None => {
+            return Err(UserError::ValidationError(format!(
+                "User {} doesn't exist anymore or is archived",
+                identity.username
+            )));
+        }
+    };
 
     UserError::wrap_template(
         templates::UserSettingsTemplate {
@@ -381,20 +377,21 @@ pub async fn post_settings_user(
     pool: Data<DbPool>,
     data: Form<forms::SettingsForm>,
 ) -> UserResponse {
-    let conn = acquire_connection_user(&pool)?;
+    let conn = pool.get()?;
     let identity = guard_with_user(id)?;
 
     let sacrifice = identity.username.clone();
-    let user = block(move || get_user_by_username(&conn, sacrifice))
-        .await
-        .map_err(|e| {
-            eprintln!("{}", e);
-            return UserError::InternalError {
-                code: 1,
-                message: "Something unexpected happened".to_owned(),
-            };
-        })?
-        .unwrap();
+    let result = block(move || get_user_by_username(&conn, sacrifice)).await?;
+
+    let user = match result {
+        Some(user) => user,
+        None => {
+            return Err(UserError::ValidationError(format!(
+                "User {} is deleted or achived",
+                identity.username
+            )));
+        }
+    };
 
     match data.0.password {
         Some(new) => match data.0.old_password {
@@ -413,16 +410,17 @@ pub async fn post_settings_user(
                 }
             }
             None => {
-                return Err(UserError::ValidationError {});
+                return Err(UserError::ValidationError(
+                    "Old Password not supplied. Invalid Form send".to_owned(),
+                ));
             }
         },
         None => (),
     };
 
-    return Err(UserError::InternalError {
-        code: 4,
-        message: "Failed to respond appropiatly".to_owned(),
-    });
+    return Err(UserError::InternalError(
+        "Failed to respond appropiatly".to_owned(),
+    ));
 }
 
 pub async fn get_register_user() -> UserResponse {
@@ -496,69 +494,36 @@ pub async fn post_register_user(
     }
 
     // get connection from database pool
-    let mut conn = acquire_connection_user(&pool)?;
+    let mut conn = pool.get()?;
 
     // to circumvent the `move` closure for web:block
     let username = form.username.clone();
 
     // check if username is already in use
-    let user = block(move || get_user_by_username(&conn, username))
-        .await
-        .map_err(|e| {
-            eprintln!("{}", e);
-            return UserError::InternalError {
-                code: 1,
-                message: "Something unexpected happened".to_owned(),
-            };
-        });
+    let user = block(move || get_user_by_username(&conn, username)).await?;
 
     match user {
-        Ok(optional) => match optional {
-            Some(_) => {
-                return UserError::wrap_template(
-                    templates::UserRegisterTemplate {
-                        username: form.username.clone(),
-                        password: form.password.clone(),
-                        id: None,
-                        cookie_error: false,
-                        alert: "Username already in use or reserved",
-                        username_error: false,
-                        password_error: false,
-                    }
-                    .into_response(),
-                );
-            }
-            None => (),
-        },
-        Err(why) => {
-            eprintln!("Error: {}", why);
-            return Err(UserError::InternalError {
-                code: 1,
-                message: "Something unexpected happened".to_owned(),
-            });
+        Some(_) => {
+            return UserError::wrap_template(
+                templates::UserRegisterTemplate {
+                    username: form.username.clone(),
+                    password: form.password.clone(),
+                    id: None,
+                    cookie_error: false,
+                    alert: "Username already in use or reserved",
+                    username_error: false,
+                    password_error: false,
+                }
+                .into_response(),
+            );
         }
+        None => (),
     };
 
     // due to the `move` (and missing clone) requirement of web::block the connection needs to be reacquired
-    conn = acquire_connection_user(&pool)?;
+    conn = pool.get()?;
 
-    let user = match block(move || create_user(&conn, &form.username, &form.password))
-        .await
-        .map_err(|e| {
-            eprintln!("{}", e);
-            UserError::InternalError {
-                code: 1,
-                message: "Something unexpected happened".to_owned(),
-            }
-        }) {
-        Ok(connection) => connection,
-        Err(_) => {
-            return Err(UserError::InternalError {
-                code: 2,
-                message: "Failed to save record to database".to_owned(),
-            });
-        }
-    };
+    let user = block(move || create_user(&conn, &form.username, &form.password)).await?;
 
     // logs new user in
     let user_string = serde_json::to_string(&user).unwrap();

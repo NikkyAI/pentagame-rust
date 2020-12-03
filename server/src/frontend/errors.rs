@@ -2,11 +2,16 @@
 use super::routes::{redirect, UserResponse};
 use super::templates;
 use actix_web::{
-    dev::HttpResponseBuilder, error::ResponseError, http::header, http::StatusCode,
-    Error as WebError, HttpResponse,
+    dev::HttpResponseBuilder, error::BlockingError, error::ResponseError, http::header,
+    http::StatusCode, Error as WebError, HttpResponse,
 };
 use askama_actix::TemplateIntoResponse;
-use derive_more::{Display, Error};
+use derive_more::Display;
+use diesel::{
+    r2d2::PoolError,
+    result::{DatabaseErrorKind, Error as DBError},
+};
+use uuid::ParseError;
 
 /*
 UserError:
@@ -21,14 +26,13 @@ UserError:
         1: not found
         2: LOL
 */
-#[derive(Debug, Display, Error)]
+#[derive(Debug, Display)]
 pub enum UserError {
-    #[display(fmt = "Internal Error {}: {}", code, message)]
-    InternalError { code: u16, message: String },
-    #[display(fmt = "Authorization is required")]
-    AuthorizationError {},
-    #[display(fmt = "All fields are required")]
-    ValidationError {},
+    PoolError(String),
+    InternalError(String),
+    AuthorizationError(String),
+    ValidationError(String),
+    BlockingError(String),
 }
 
 impl ResponseError for UserError {
@@ -73,6 +77,7 @@ impl ResponseError for UserError {
             UserError::InternalError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
             UserError::AuthorizationError { .. } => StatusCode::UNAUTHORIZED,
             UserError::ValidationError { .. } => StatusCode::BAD_REQUEST,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
@@ -83,11 +88,77 @@ impl UserError {
             Ok(response) => Ok(response),
             Err(why) => {
                 eprintln!("InternalError: {:?}", why);
-                Err(UserError::InternalError {
-                    code: 1,
-                    message: "Failed to render requested template".to_owned(),
-                })
+                Err(UserError::InternalError(
+                    "Failed to render requested template".to_owned(),
+                ))
             }
+        }
+    }
+}
+
+// Convert PoolErrors to UserErrors
+impl From<PoolError> for UserError {
+    fn from(error: PoolError) -> UserError {
+        UserError::PoolError(error.to_string())
+    }
+}
+
+// Convert ParseErrors to UserErrors
+impl From<ParseError> for UserError {
+    fn from(error: ParseError) -> UserError {
+        UserError::ValidationError(error.to_string())
+    }
+}
+
+// convert WebErrors to UserErrors
+impl From<WebError> for UserError {
+    fn from(error: WebError) -> UserError {
+        UserError::InternalError(error.to_string())
+    }
+}
+
+// Convert Thread BlockingErrors to UserErrors
+impl From<BlockingError<WebError>> for UserError {
+    fn from(error: BlockingError<WebError>) -> UserError {
+        match error {
+            BlockingError::Error(web_error) => UserError::InternalError(web_error.to_string()),
+            BlockingError::Canceled => UserError::BlockingError("Thread blocking error".into()),
+        }
+    }
+}
+
+impl From<BlockingError<UserError>> for UserError {
+    fn from(error: BlockingError<UserError>) -> UserError {
+        match error {
+            BlockingError::Error(user_error) => user_error,
+            BlockingError::Canceled => UserError::BlockingError("Thread blocking error".into()),
+        }
+    }
+}
+
+impl From<BlockingError<DBError>> for UserError {
+    fn from(error: BlockingError<DBError>) -> UserError {
+        match error {
+            BlockingError::Error(db_error) => UserError::InternalError(db_error.to_string()),
+            BlockingError::Canceled => UserError::BlockingError("Thread blocking error".into()),
+        }
+    }
+}
+
+// Convert DBErrors to UserErrors
+impl From<DBError> for UserError {
+    fn from(error: DBError) -> UserError {
+        // Right now we just care about UniqueViolation from diesel
+        // But this would be helpful to easily map errors as our app grows
+        match error {
+            DBError::DatabaseError(kind, info) => {
+                if let DatabaseErrorKind::UniqueViolation = kind {
+                    let message = info.details().unwrap_or_else(|| info.message()).to_string();
+                    return UserError::ValidationError(message);
+                }
+                UserError::InternalError("Unknown database error".to_owned())
+            }
+            _ => UserError::InternalError("Unknown database error".to_owned()),
         }
     }
 }

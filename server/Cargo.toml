@@ -12,6 +12,7 @@ actix-web = { version = "3", default-features = false, features = [
     "compress",
     "secure-cookies",
 ] }
+actix-redis = "0.9.1"
 actix-web-actors = "3"
 askama = { version = "0.10", default-features = false, features = [
     "with-actix-web",
@@ -29,6 +30,7 @@ diesel = { version = "1.4.5", features = [
     "uuid",
     "chrono"
 ] }
+
 futures = "0.3.6"
 hashbrown = { version = "0.9.1", features = ["serde", "ahash-compile-time-rng"] }
 lazy_static = "1.4"

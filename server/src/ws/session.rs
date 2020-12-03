@@ -1,4 +1,4 @@
-use super::actor::{Connect, Disconnect, GameServer, Message};
+use super::actor::{Connect, Disconnect, GameServer, Message, QueryGameMessage, QueryUsersMessage};
 use super::errors::{MESSAGE_FORMAT_ERROR, UNIMPLEMENTED_ERROR};
 use crate::db::model::SlimUser;
 use actix::prelude::*;
@@ -19,6 +19,12 @@ struct ServerMessage {
     pub data: HashMap<String, String>,
 }
 
+#[derive(Serialize, Clone, Debug)]
+struct ServerListMessage<T> {
+    pub action: u8,
+    pub data: Vec<T>,
+}
+
 pub struct WsGameSession {
     // unique session id (== user id)
     pub id: usize,
@@ -30,7 +36,7 @@ pub struct WsGameSession {
     // Game server
     pub addr: Addr<GameServer>,
     // axtix identity bound
-    pub cid: SlimUser,
+    pub uid: SlimUser,
 }
 
 impl Actor for WsGameSession {
@@ -47,7 +53,7 @@ impl Actor for WsGameSession {
         self.addr
             .send(Connect {
                 addr: addr.recipient(),
-                uid: self.cid.id
+                uid: self.uid.id,
             })
             .into_actor(self)
             .then(|res, act, ctx| {
@@ -102,16 +108,103 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsGameSession {
             ws::Message::Pong(_) => {
                 self.hb = Instant::now();
             }
-            ws::Message::Text(text) => match serde_json::from_str::<Message>(&text) {
-                Ok(action) => {
-                    // see action mapping in actors::ClientMessage
-                    match action.action {
-                        1 => (),
-                        _ => ctx.text(UNIMPLEMENTED_ERROR.clone()),
-                    };
+            ws::Message::Text(text) => {
+                match serde_json::from_str::<Message>(&text) {
+                    Ok(action) => {
+                        // see action mapping in actors::ClientMessage
+                        match action.action {
+                            0 => {
+                                self.addr.send(QueryUsersMessage { gid: self.game })
+                            .into_actor(self)
+                            .then(|res, _, ctx| {
+                                let _ = match res {
+                                     Ok(result) => {
+                                        let users = match result {
+                                                Ok(users) => users,
+                                                Err(_) => {
+                                                    ctx.stop();
+                                                    return fut::ready(());
+                                                }
+                                        };
+                                        let message = ServerListMessage {
+                                            action: 0,
+                                            data: users
+                                        };
+
+                                        let data = match serde_json::to_string(&message) {
+                                                Ok(data) => data,
+                                                Err(_) => {
+                                                    ctx.stop();
+                                                    return fut::ready(());
+                                                }
+                                        };
+
+                                        ctx.text(data);
+
+                                    }
+                                    // something is wrong with game server
+                                    Err(why) => {
+                                        eprintln!("The gamserver crashed or game was closed: {:?}", why);
+                                        ctx.stop()
+                                    }
+                                };
+                                fut::ready(())
+
+                            })
+                            .wait(ctx);
+                            }
+                            1 => {
+                                self.addr.send(QueryGameMessage { gid: self.game })
+                            .into_actor(self)
+                            // Result<(String, String, i32), APIError>
+                            .then(|res, _, ctx| {
+                                let _ = match res {
+                                     Ok(result) => {
+                                        let (name, description, status) = match result {
+                                                Ok(users) => users,
+                                                Err(_) => {
+                                                    ctx.stop();
+                                                    return fut::ready(());
+                                                }
+                                        };
+
+                                        let mut data = HashMap::with_capacity(3);
+                                        data.insert("name".to_owned(), name);
+                                        data.insert("description".to_owned(), description);
+                                        data.insert("status".to_owned(), status.to_string());
+                                        let message = ServerMessage {
+                                            action: 1,
+                                             data
+                                        };
+
+                                        let data = match serde_json::to_string(&message) {
+                                                Ok(data) => data,
+                                                Err(_) => {
+                                                    ctx.stop();
+                                                    return fut::ready(());
+                                                }
+                                        };
+
+                                        ctx.text(data);
+
+                                    }
+                                    // something is wrong with game server
+                                    Err(why) => {
+                                        eprintln!("The gamserver crashed or game was closed: {:?}", why);
+                                        ctx.stop()
+                                    }
+                                };
+                                fut::ready(())
+
+                            })
+                            .wait(ctx);
+                            }
+                            _ => ctx.text(UNIMPLEMENTED_ERROR.clone()),
+                        };
+                    }
+                    Err(_) => ctx.text(MESSAGE_FORMAT_ERROR.clone()),
                 }
-                Err(_) => ctx.text(MESSAGE_FORMAT_ERROR.clone()),
-            },
+            }
             ws::Message::Binary(_) => ctx.text(UNIMPLEMENTED_ERROR.clone()),
             ws::Message::Close(reason) => {
                 ctx.close(reason);

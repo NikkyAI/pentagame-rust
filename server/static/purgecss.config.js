@@ -18,6 +18,10 @@ module.exports = {
     "alert-info",
     "btn-close",
     "alert-dismissible",
+    "badge",
+    "bg-primary",
+    "bg-secondary",
+    "rounded-pill",
   ],
   variables: true,
 };

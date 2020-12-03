@@ -1,25 +1,19 @@
 // imports
 use super::schema::*;
+use crate::graph::models::MOVE;
 use chrono::NaiveDateTime;
 use diesel::{Associations, Identifiable, Insertable, Queryable};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Identifiable, Queryable, PartialEq, Debug)]
-pub struct Move {
-    pub id: i32,
-    pub fnode: i16,
-    pub ncounter: i16,
-    pub snode: i16,
-}
-
 #[derive(Identifiable, Queryable, Associations, PartialEq, Debug)]
 #[table_name = "game_moves"]
-#[belongs_to(Move)]
 #[belongs_to(Game)]
+#[belongs_to(User)]
 pub struct GameMove {
     pub id: i32,
-    pub move_id: i32,
+    pub user_id: Uuid,
+    pub umove: MOVE,
     pub game_id: i32,
 }
 
@@ -43,6 +37,14 @@ pub struct Game {
     pub public: bool,
 }
 
+#[derive(Identifiable, Queryable, Associations, PartialEq, Debug)]
+#[table_name = "games"]
+#[belongs_to(User)]
+pub struct SlimGame {
+    pub id: i32,
+    pub user_id: Uuid,
+}
+
 #[derive(Identifiable, Associations, Queryable, PartialEq, Debug)]
 #[table_name = "user_games"]
 #[belongs_to(User)]
@@ -53,7 +55,7 @@ pub struct UserGame {
     pub game_id: i32,
 }
 
-#[derive(Identifiable, Insertable, Queryable, PartialEq, Debug)]
+#[derive(Identifiable, Insertable, Clone, Queryable, PartialEq, Debug)]
 pub struct User {
     pub id: Uuid,
     pub username: String,
@@ -67,8 +69,8 @@ pub struct User {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct SlimUser {
-    pub username: String,
     pub id: Uuid,
+    pub username: String,
 }
 
 // INFO: Form support moved to sever/frontend/forms
@@ -96,15 +98,8 @@ pub struct NewUserGame {
 #[table_name = "game_moves"]
 pub struct NewGameMove {
     pub game_id: i32,
-    pub move_id: i32,
-}
-
-#[derive(Deserialize, Insertable)]
-#[table_name = "moves"]
-pub struct NewMove {
-    pub fnode: i16,
-    pub ncounter: i16,
-    pub snode: i16,
+    pub user_id: Uuid,
+    pub umove: Vec<i16>,
 }
 
 // Conversion Support

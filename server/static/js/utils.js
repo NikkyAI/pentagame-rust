@@ -55,8 +55,8 @@ let getJSONP = (obj) => {
     let xhr = new XMLHttpRequest();
 
     // open connection
-    if (obj.method !== undefined) {
-      xhr.open(obj.method, obj.url);
+    if (obj.method === "POST") {
+      xhr.open("POST", obj.url);
     } else {
       xhr.open("GET", obj.url);
     }

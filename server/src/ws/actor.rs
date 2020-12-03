@@ -1,7 +1,6 @@
 use crate::api::errors::APIError;
 use crate::config::{DatabaseConfig, CONFIG};
-use crate::db::actions::{get_game, get_user_game};
-use crate::db::helper::acquire_connection_ws;
+use crate::db::actions::{get_game, get_game_users, get_slim_game, get_user_game};
 use crate::frontend::routes::DbPool;
 use actix::prelude::*;
 use hashbrown::{HashMap, HashSet};
@@ -39,6 +38,22 @@ pub struct Message {
 }
 
 // Message for game server communications
+
+/*
+Message for sending query to get users for current game
+WARNING: This isn't cached at the moment
+*/
+#[derive(Message)]
+#[rtype(result = "Result<Vec<(Uuid, String)>, APIError>")]
+pub struct QueryUsersMessage {
+    pub gid: i32,
+}
+
+#[derive(Message)]
+#[rtype(result = "Result<(String, String, i32), APIError>")]
+pub struct QueryGameMessage {
+    pub gid: i32,
+}
 
 // New game session is created
 #[derive(Message)]
@@ -149,21 +164,11 @@ impl Handler<Connect> for GameServer {
         self.sessions.insert(id, msg.addr);
 
         // add to group
-        let conn = acquire_connection_ws(&self.pool)?;
-        let gid = match get_user_game(&conn, msg.uid) {
-            Ok(result) => match result {
-                Some(id) => id,
-                None => {
-                    return Err(APIError::ValidationError {
-                        field: "Not joined any game".to_owned(),
-                    });
-                }
-            },
-            Err(_) => {
-                return Err(APIError::InternalError {
-                    code: 3,
-                    message: "Failed to run query".to_owned(),
-                });
+        let conn = self.pool.get()?;
+        let gid = match get_user_game(&conn, msg.uid)? {
+            Some(id) => id,
+            None => {
+                return Err(APIError::ValidationError("Not joined any game".to_owned()));
             }
         };
 
@@ -209,6 +214,32 @@ impl Handler<Disconnect> for GameServer {
     }
 }
 
+// handler for user query message
+impl Handler<QueryUsersMessage> for GameServer {
+    type Result = Result<Vec<(Uuid, String)>, APIError>;
+
+    fn handle(&mut self, msg: QueryUsersMessage, _: &mut Context<Self>) -> Self::Result {
+        let conn = self.pool.get()?;
+
+        Ok(get_game_users(&conn, msg.gid)?)
+    }
+}
+
+// handler for game query message
+impl Handler<QueryGameMessage> for GameServer {
+    type Result = Result<(String, String, i32), APIError>;
+
+    fn handle(&mut self, msg: QueryGameMessage, _: &mut Context<Self>) -> Self::Result {
+        let conn = self.pool.get()?;
+
+        let game = get_slim_game(&conn, msg.gid)?;
+        match game.1 {
+            Some(desc) => Ok((game.0, desc, game.2)),
+            None => Ok((game.0, "".to_owned(), game.2)),
+        }
+    }
+}
+
 // Handler for ClientMessage message.
 impl Handler<ClientMessage> for GameServer {
     type Result = Result<(), APIError>;
@@ -216,38 +247,22 @@ impl Handler<ClientMessage> for GameServer {
     fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) -> Self::Result {
         match msg.action {
             0 => {
-                let conn = acquire_connection_ws(&self.pool)?;
-                match get_game(&conn, msg.game) {
-                    Ok(result) => match result {
-                        Some((_, users)) => {
-                            let mut data = HashMap::with_capacity(users.len());
-                            users.iter().for_each(|(id, name)| {
-                                data.insert(id.to_string(), name.clone());
-                            });
-                            match self.sessions.get(&msg.id).unwrap().do_send(Message {
-                                action: msg.action,
-                                data,
-                            }) {
-                                Ok(_) => (),
-                                Err(_) => {
-                                    return Err(APIError::InternalError {
-                                        code: 4,
-                                        message: "Failed to deliver message to websocket"
-                                            .to_owned(),
-                                    });
-                                }
-                            }
-                        }
-                        None => {
-                            return Err(APIError::ValidationError {
-                                field: "Game id".to_owned(),
-                            });
-                        }
-                    },
+                let conn = self.pool.get()?;
+                let (_, users) = get_game(&conn, msg.game)?;
+
+                let mut data = HashMap::with_capacity(users.len());
+                users.iter().for_each(|(id, name)| {
+                    data.insert(id.to_string(), name.clone());
+                });
+                match self.sessions.get(&msg.id).unwrap().do_send(Message {
+                    action: msg.action,
+                    data,
+                }) {
+                    Ok(_) => (),
                     Err(_) => {
-                        return Err(APIError::ValidationError {
-                            field: "Game id".to_owned(),
-                        });
+                        return Err(APIError::InternalError(
+                            "Failed to deliver message to websocket".to_owned(),
+                        ));
                     }
                 }
 

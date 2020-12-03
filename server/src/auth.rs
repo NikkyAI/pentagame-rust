@@ -79,27 +79,35 @@ pub fn generate_hash(password: String) -> String {
 pub fn guard_user(id: &Option<SlimUser>) -> Result<(), UserError> {
     match id {
         Some(_) => Ok(()),
-        None => Err(UserError::AuthorizationError {}),
+        None => Err(UserError::AuthorizationError(
+            "You need to be authenticated to access this resource".to_owned(),
+        )),
     }
 }
 
 pub fn guard_with_user(id: Option<SlimUser>) -> Result<SlimUser, UserError> {
     match id {
         Some(identity) => Ok(identity),
-        None => Err(UserError::AuthorizationError {}),
+        None => Err(UserError::AuthorizationError(
+            "You need to be authenticated to access this resource".to_owned(),
+        )),
     }
 }
 
 pub fn guard_api(id: &Option<SlimUser>) -> Result<(), APIError> {
     match id {
         Some(_) => Ok(()),
-        None => Err(APIError::AuthorizationError {}),
+        None => Err(APIError::AuthorizationError(
+            "Please authenticate yourself before accessing this resource.".to_owned(),
+        )),
     }
 }
 
 pub fn guard_api_with_user(id: Option<SlimUser>) -> Result<SlimUser, APIError> {
     match id {
         Some(identity) => Ok(identity),
-        None => Err(APIError::AuthorizationError {}),
+        None => Err(APIError::AuthorizationError(
+            "Please authenticate yourself before accessing this resource.".to_owned(),
+        )),
     }
 }

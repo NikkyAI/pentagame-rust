@@ -3,9 +3,22 @@ block content %}
 
 <form method="POST">
   <!-- Name input -->
-  <div class="form-outline border-dark mb-4">
-    <input type="text" id="name" name="name" class="form-control" required />
-    <label class="form-label" for="name">Name</label>
+  <div class="form-group">
+    <div class="input-name mb-3">
+      <input
+        type="text"
+        name="name"
+        id="name"
+        value="{{ name }}"
+        placeholder=" Name"
+        aria-placeholder="Game Name"
+        class="form-control id {% if name_error %}is-invalid{% endif %}"
+      />
+      <span
+        class="underline-animation"
+        style="max-width: 40rem !important;"
+      ></span>
+    </div>
   </div>
 
   <!-- Public checkbox -->
@@ -31,14 +44,21 @@ block content %}
   </div>
 
   <!-- Description input -->
-  <div class="form-outline border-dark mb-4">
+  <p>
+    Your description should contain information about e.g. the background of
+    your game.
+  </p>
+
+  <div class="input-name mb-3">
     <textarea
-      class="form-control"
+      class="form-control id {% if description_error %}is-invalid{% endif %}"
       id="description"
+      placeholder=" Game description"
       name="description"
+      value="{{ description }}"
       rows="4"
     ></textarea>
-    <label class="form-label" for="description">Description</label>
+    <span class="underline-animation"></span>
   </div>
 
   <!-- Submit button -->
