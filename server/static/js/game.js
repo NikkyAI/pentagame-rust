@@ -3,8 +3,8 @@ import {
   Junction,
   Corner,
   COLORS,
-  SlimPentaMath,
 } from "./core.js";
+import { PentaMath } from "./pentagame.js";
 import {
   /* webpackMode: "eager" */
   getJSONP,
@@ -12,29 +12,11 @@ import {
   create_alert,
 } from "./utils.js";
 
+const SCALE = 1000;
+
 class Game {
-  constructor(scale, url) {
-    this.board = {
-      junctions: [],
-      corners: [],
-      stops: [],
-      scale: scale,
-    };
-
-    // INFO: Change for production
-    if (url !== undefined) {
-      this.socket = new WebSocket(url);
-    } else {
-      this.socket = new WebSocket("ws://localhost:8080/games/ws/");
-    }
-
-    this.draw_board();
-    this.create_modal();
-
-    this.socket.reference = this;
-    this.socket.onopen = this.onopen;
-    this.socket.onclose = this.onclose;
-    this.socket.onmessage = this.onmessage;
+  constructor(url) {
+    this.url = url;
   }
 
   create_modal() {
@@ -45,15 +27,13 @@ class Game {
     };
 
     // bind bs modal
-    this.loading.modal = new bootstrap.Modal(
-      document.getElementById("loading-modal"),
-      {
-        show: true,
-        backdrop: "static",
-        keyboard: false,
-        focus: true,
-      }
-    );
+    this.loading.modal_el = document.getElementById("loading-modal");
+    this.loading.modal = new bootstrap.Modal(this.loading.modal_el, {
+      show: true,
+      backdrop: "static",
+      keyboard: false,
+      focus: true,
+    });
 
     // bind modal-title and modal-content
     this.loading.content = document.getElementById("modal-content");
@@ -75,33 +55,28 @@ class Game {
       id: "penta",
     });
 
-    this.drawer.data({ size: this.board.scale });
-    const math = new SlimPentaMath(this.board.scale);
+    this.drawer.data({ size: SCALE });
+    this.math = new PentaMath(this.drawer);
+    this.board = this.math.draw(SCALE);
+  }
 
-    this.board.bg_circle = this.drawer.circle(
-      math.schrinked_scale + math.lw * 5
-    );
-    this.board.bg_circle.attr({
-      cx: math.center.x,
-      cy: math.center.y,
-      fill: COLORS.background,
-      id: "background-circle",
-    });
+  open() {
+    // start drawing
+    // those are done first as they don't rely on external data for creation
+    this.draw_board();
+    this.create_modal();
 
-    this.board.outer_bg_circle = drawer.circle(math.outer_circle * 2);
-    this.board.outer_bg_circle.attr({
-      cx: math.center.x,
-      cy: math.center.y,
-      fill: "none",
-      stroke: colors.foreground,
-      "stroke-width": lineWidth,
-    });
-    OuterBGCircle.data({ id: "outer-circle" });
-
-    for (let i = 0; i < 5; i++) {
-      this.board.junctions.push(new Junction(math).draw(this.drawer, i));
-      this.board.corners.push(new Corner(math).draw(this.drawer, i));
+    // INFO: Change for production
+    if (this.url !== undefined) {
+      this.socket = new WebSocket(this.url);
+    } else {
+      this.socket = new WebSocket("ws://localhost:8080/games/ws/");
     }
+
+    this.socket.reference = this;
+    this.socket.onopen = this.onopen;
+    this.socket.onclose = this.onclose;
+    this.socket.onmessage = this.onmessage;
   }
 
   onopen(event) {
@@ -120,7 +95,6 @@ class Game {
     this.socket.send(JSON.stringify({ action: 0, data: {} }));
     this.socket.send(JSON.stringify({ action: 1, data: {} }));
 
-    // finish
     this.loading.modal.hide();
   }
 
@@ -210,6 +184,8 @@ class Game {
   }
 }
 
+const instance = new Game("ws://localhost:8080/games/ws/");
+
 document.addEventListener("DOMContentLoaded", function () {
   /*
    Check for screen size and show popup if incompatible
@@ -225,16 +201,11 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /*
-    Bind modal
-  */
-
-  // draw the initial board
-  const size = 1000;
-
-  /*
    This doesn't do authentication as the request is handled with SessionCookies
    */
-  const instance = new Game(size);
+
+  instance.open();
+  globalThis.instance = instance;
 
   Array.prototype.slice
     .call(document.querySelectorAll("[data-id]"))

@@ -2,6 +2,7 @@ import {
   /* webpackMode: "eager" */
   Point,
   Figure,
+  COLORS,
 } from "./core.js";
 import {
   /* webpackMode: "eager" */
@@ -78,18 +79,8 @@ export class PentaMath {
     return figure;
   }
 
-  draw(drawer, scale, args) {
+  draw(scale, args) {
     // evaluate args
-    if (args === undefined || args.colors === undefined) {
-      const colors = {
-        fields: ["blue", "white", "green", "yellow", "red"],
-        background: "#28292b",
-        foreground: "#d3d3d3",
-      };
-    } else {
-      const colors = args.colors;
-    }
-
     if (args !== undefined && args.shift !== undefined) {
       this.shift = { shift: true };
     } else {
@@ -97,7 +88,7 @@ export class PentaMath {
     }
 
     // setup board
-    var board = {
+    this.board = {
       corners: {},
       junctions: {},
       stops: {
@@ -107,7 +98,7 @@ export class PentaMath {
     };
 
     // fix drawer aspect ratio
-    drawer.attr({ preserveAspectRatio: "xMidYMid meet" });
+    this.drawer.attr({ preserveAspectRatio: "xMidYMid meet" });
 
     // evaluate basic points and values
     const center = { x: 0.5 * scale, y: 0.5 * scale };
@@ -124,21 +115,21 @@ export class PentaMath {
       (scale / this.constants.sizes.R) * this.constants.sizes.s;
 
     // bg circle
-    const BGCircle = drawer.circle(scale + lineWidth * 5);
+    const BGCircle = this.drawer.circle(scale + lineWidth * 5);
     BGCircle.attr({
       cx: center.x,
       cy: center.y,
-      fill: colors.background,
+      fill: COLORS.background,
       id: "background-circle",
     });
 
     // draw outer circle
-    const OuterBGCircle = drawer.circle(OuterRadius * 2);
+    const OuterBGCircle = this.drawer.circle(OuterRadius * 2);
     OuterBGCircle.attr({
       cx: center.x,
       cy: center.y,
       fill: "none",
-      stroke: colors.foreground,
+      stroke: COLORS.foreground,
       "stroke-width": lineWidth,
     });
     OuterBGCircle.data({ id: "outer-circle" });
@@ -172,15 +163,15 @@ export class PentaMath {
           StopAngle,
           this.shift
         );
-        let OuterStop = drawer.circle(StopRadius);
+        let OuterStop = this.drawer.circle(StopRadius);
         OuterStop.attr({
-          fill: colors.foreground,
-          stroke: colors.background,
+          fill: COLORS.foreground,
+          stroke: COLORS.background,
           "stroke-width": lineWidth * 0.5,
         });
         OuterStop.center(StopPoints.x, StopPoints.y);
         OuterStop.data({ id: `s-${i}-${x}` });
-        board.stops.outer[`s-${i}-${x}`] = {
+        this.board.stops.outer[`s-${i}-${x}`] = {
           x: StopPoints.x,
           y: StopPoints.y,
           angle: StopAngle,
@@ -194,15 +185,15 @@ export class PentaMath {
           ArmAngle,
           this.shift
         );
-        let ArmStop = drawer.circle(StopRadius);
+        let ArmStop = this.drawer.circle(StopRadius);
         ArmStop.attr({
-          fill: colors.foreground,
-          stroke: colors.background,
+          fill: COLORS.foreground,
+          stroke: COLORS.background,
           "stroke-width": lineWidth * 0.5,
         });
         ArmStop.center(ArmPoints.x, ArmPoints.y);
         ArmStop.data({ id: `s-${i + 1}-${x}` });
-        board.stops.inner[`s-${i + 1}-${x}`] = {
+        this.board.stops.inner[`s-${i + 1}-${x}`] = {
           x: ArmPoints.x,
           y: ArmPoints.y,
           angle: ArmAngle,
@@ -217,7 +208,7 @@ export class PentaMath {
           this.constants.theta * -1 + 180 + CornerAngle,
         ];
         for (const index in LegAngles) {
-          var Leg = drawer.circle(StopRadius);
+          var Leg = this.drawer.circle(StopRadius);
           let LegPoints = this.helper(
             CornerPoints.x,
             CornerPoints.y,
@@ -226,13 +217,13 @@ export class PentaMath {
             this.shift
           );
           Leg.attr({
-            fill: colors.foreground,
-            stroke: colors.background,
+            fill: COLORS.foreground,
+            stroke: COLORS.background,
             "stroke-width": lineWidth * 0.5,
           });
           Leg.center(LegPoints.x, LegPoints.y);
           Leg.data({ id: `s-${i + 7}-${x}-${i + 3}` });
-          board.stops.inner[`s-${i}-${x}-${i + 5 + x}`] = {
+          this.board.stops.inner[`s-${i}-${x}-${i + 5 + x}`] = {
             x: LegPoints.x,
             y: LegPoints.y,
             angle: LegAngles[index],
@@ -241,20 +232,43 @@ export class PentaMath {
       }
 
       // draw Corners and Junctions
-      let Corner = drawer.circle(CornerRadius);
+      let Corner = this.drawer.circle(CornerRadius);
       Corner.attr({
-        fill: colors.foreground,
-        stroke: colors.fields[i],
+        fill: COLORS.foreground,
+        stroke: COLORS.fields[i],
         "stroke-width": 0.75 * lineWidth,
       });
       Corner.center(CornerPoints.x, CornerPoints.y);
       Corner.data({ id: i + 6 });
-    }
 
-    this.board = board;
-    return {
-      board: board,
-    };
+      var Junction = this.drawer.circle(JunctionRadius);
+      Junction.attr({
+        fill: COLORS.foreground,
+        stroke: COLORS.fields[i],
+        "stroke-width": 0.75 * lineWidth,
+      });
+      Junction.center(JunctionPoints.x, JunctionPoints.y);
+      Junction.data({ id: i + 1 });
+
+      this.board.corners[i] = new Point({
+        id: i + 7,
+        x: CornerPoints.x,
+        y: CornerPoints.y,
+        next: i + 8,
+        node: Corner.node,
+        angle: CornerAngle,
+        color: COLORS[i],
+      });
+      this.board.junctions[i] = new Point({
+        id: i + 1,
+        x: JunctionPoints.x,
+        y: JunctionPoints.y,
+        next: i + 2,
+        node: Junction.node,
+        angle: JunctionAngle,
+        color: COLORS[i],
+      });
+    }
   }
 }
 
