@@ -23,7 +23,7 @@ serve:
 	./target/release/pentagame serve
 build:
 	cargo b --release
-	cd static/ &&  yarn run production-compile
+	cd static/ && yarn && yarn run production-compile
 generate:
 	cargo b --release
 	./target/release/pentagame generate
