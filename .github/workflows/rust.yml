@@ -41,7 +41,7 @@ jobs:
       - name: Setup
         run: |
           bash scripts/ci.sh
-          apt install -yqq npm
+          sudo apt install -yqq npm
           cargo install diesel_cli --no-default-features --features postgres
       - name: Build
         run: |
