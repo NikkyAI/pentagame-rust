@@ -41,8 +41,8 @@ jobs:
       - name: Setup
         run: |
           bash scripts/ci.sh
+          apt install -yqq npm
           cargo install diesel_cli --no-default-features --features postgres
-          cargo install wasm-pack
       - name: Build
         run: |
           bash scripts/full-setup.sh
