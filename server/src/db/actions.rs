@@ -6,7 +6,7 @@ use crate::auth::generate_hash;
 use cached::{proc_macro::cached, stores::TimedCache};
 use chrono::offset::Local;
 use diesel::{
-    delete, dsl::max, insert_into, result::Error, BelongingToDsl, ExpressionMethods, JoinOnDsl,
+    delete, insert_into, result::Error, BelongingToDsl, ExpressionMethods, JoinOnDsl,
     OptionalExtension, PgConnection, QueryDsl, RunQueryDsl,
 };
 use uuid::Uuid;
@@ -95,7 +95,10 @@ pub fn get_game(conn: &PgConnection, id: i32) -> Result<(Game, Vec<(Uuid, String
     key = "i32",
     create = "{ TimedCache::with_lifespan(10) }"
 )]
-pub fn get_slim_game(conn: &PgConnection, gid: i32) -> Result<(String, Option<String>, i32), Error> {
+pub fn get_slim_game(
+    conn: &PgConnection,
+    gid: i32,
+) -> Result<(String, Option<String>, i32), Error> {
     use super::schema::games::{self, dsl::*};
 
     games::table
@@ -123,6 +126,35 @@ pub fn get_game_users(conn: &PgConnection, id: i32) -> Result<Vec<(Uuid, String)
     return Ok(users);
 }
 
+#[cached(
+    convert = "{ uid }",
+    type = "TimedCache<Uuid, Vec<(i16, String)>>",
+    result = true,
+    key = "i32",
+    create = "{ TimedCache::with_lifespan(30) }"
+)]
+pub fn get_user_alerts(conn: &PgConnection, uid: Uuid) -> Result<Vec<(i16, String)>, Error> {
+    use super::schema::alerts::{self as s_alerts, dsl::*};
+
+    let mut removable: Vec<i32> = Vec::new();
+    let results = s_alerts::table
+        .filter(user_id.eq(uid))
+        .select((id, header_type, message))
+        .load::<(i32, i16, String)>(conn)?;
+
+    let user_alerts = results
+        .iter()
+        .map(|(alert_id, alert_type, alert_message)| {
+            removable.push(*alert_id);
+            (*alert_type, alert_message.clone())
+        })
+        .collect::<Vec<(i16, String)>>();
+
+    delete(alerts.filter(id.eq_any(removable))).execute(conn)?;
+
+    return Ok(user_alerts);
+}
+
 pub fn create_user(
     conn: &PgConnection,
     new_username: &String,
@@ -131,7 +163,7 @@ pub fn create_user(
     use crate::db::schema::users::{id, username};
 
     let now = Local::now().naive_local();
-    let status = format!("Author joined {:?}", now.date());
+    let status = format!("Player joined {:?}", now.date());
     let hash = generate_hash(new_password.clone());
 
     let new_users = User {
@@ -168,6 +200,18 @@ pub fn get_user_by_username(conn: &PgConnection, name: String) -> Result<Option<
 
 #[cached(
     convert = "{ uid }",
+    type = "TimedCache<Uuid, Option<User>>",
+    result = true,
+    create = "{ TimedCache::with_lifespan(30) }"
+)]
+pub fn get_user_by_id(conn: &PgConnection, uid: Uuid) -> Result<Option<User>, Error> {
+    use super::schema::users::dsl::*;
+
+    users.filter(id.eq(uid)).first(conn).optional()
+}
+
+#[cached(
+    convert = "{ uid }",
     type = "TimedCache<Uuid, Option<i32>>",
     key = "Uuid",
     result = true,
@@ -192,7 +236,6 @@ pub fn get_user_game(conn: &PgConnection, uid: Uuid) -> Result<Option<i32>, Erro
 
 pub fn leave_game(conn: &PgConnection, uid: Uuid) -> Result<usize, Error> {
     use super::schema::game_moves::{self, dsl::*};
-    use super::schema::user_games;
 
     let subquery = game_moves::table
         .filter(user_id.eq(&uid))
@@ -236,4 +279,23 @@ pub fn get_cached_games(conn: &PgConnection) -> Result<Vec<(i32, String)>, Error
         .order(id.desc())
         .limit(5)
         .load::<(i32, String)>(conn)
+}
+
+pub fn create_toast(
+    conn: &PgConnection,
+    uid: Uuid,
+    htype: i16,
+    message: String,
+) -> Result<(), Error> {
+    use super::schema::alerts::dsl::{alerts, header_type, message as alert_message, user_id};
+
+    insert_into(alerts)
+        .values((
+            header_type.eq(htype),
+            user_id.eq(uid),
+            alert_message.eq(zero_trim(&message)),
+        ))
+        .execute(conn)?;
+
+    Ok(())
 }

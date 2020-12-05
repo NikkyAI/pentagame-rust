@@ -1,11 +1,13 @@
 // imports
 use super::errors::UserError;
+use super::helper::check_password;
 use super::{forms, templates};
-use crate::auth::{guard_user, guard_with_user, verify_hash};
+use crate::auth::{generate_hash, guard_user, guard_with_user, verify_hash};
 use crate::db::actions::{
-    check_game, create_game, create_user, get_cached_games, get_game, get_user_by_username,
-    get_user_game, join_game, leave_game,
+    check_game, create_game, create_toast, create_user, get_cached_games, get_game, get_user_by_id,
+    get_user_by_username, get_user_game, join_game, leave_game,
 };
+use crate::db::helper::zero_trim;
 use crate::db::model::SlimUser;
 use actix_identity::Identity;
 use actix_web::error::ErrorBadRequest;
@@ -19,6 +21,7 @@ use diesel::PgConnection;
 use futures::future::{err, ok, Ready};
 use serde::Serialize;
 use serde_json::from_str;
+use uuid::Uuid;
 
 // types
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
@@ -245,6 +248,24 @@ Authentication & User managment
     users/view/{id} [GET] (requires auth) -> UserViewTemplate
 */
 
+pub async fn get_users_view(
+    id: Option<SlimUser>,
+    path: Path<Uuid>,
+    pool: Data<DbPool>,
+) -> UserResponse {
+    guard_user(&id)?;
+    let uid = path.0;
+    let conn = pool.get()?;
+    let user = block(move || get_user_by_id(&conn, uid)).await?;
+
+    match user {
+        Some(user) => {
+            UserError::wrap_template(templates::UserViewTemplate { user, id }.into_response())
+        }
+        None => Err(UserError::NotFoundError()),
+    }
+}
+
 pub async fn get_users_login(id: Option<SlimUser>) -> UserResponse {
     UserError::wrap_template(
         templates::UserLoginTemplate {
@@ -300,7 +321,7 @@ pub async fn post_users_login(
                     username: form.username.clone(),
                     password: form.password.clone(),
                     username_error: true,
-                    cookie_error: true,
+                    cookie_error,
                     id: None,
                 }
                 .into_response(),
@@ -380,10 +401,15 @@ pub async fn post_settings_user(
     let conn = pool.get()?;
     let identity = guard_with_user(id)?;
 
+    println!(
+        "username: {:?} password: {:?} new-password: {:?} status: {:?}",
+        data.0.username, data.0.password, data.0.old_password, data.0.status
+    );
+
     let sacrifice = identity.username.clone();
     let result = block(move || get_user_by_username(&conn, sacrifice)).await?;
 
-    let user = match result {
+    let mut user = match result {
         Some(user) => user,
         None => {
             return Err(UserError::ValidationError(format!(
@@ -396,13 +422,46 @@ pub async fn post_settings_user(
     match data.0.password {
         Some(new) => match data.0.old_password {
             Some(old) => {
-                if old == new {
+                if old == new || !check_password(&old) {
                     return UserError::wrap_template(
                         templates::UserSettingsTemplate {
                             user,
                             id: Some(identity),
                             status_error: false,
                             password_error: true,
+                            username_error: false,
+                        }
+                        .into_response(),
+                    );
+                } else {
+                    let sacrifice = user.id;
+                    let conn = pool.get()?;
+                    block(move || {
+                        use crate::db::schema::users::dsl::*;
+                        use diesel::{
+                            query_dsl::filter_dsl::FilterDsl, update, ExpressionMethods,
+                            RunQueryDsl,
+                        };
+
+                        update(users.filter(id.eq(&sacrifice)))
+                            .set(password.eq(zero_trim(&generate_hash(old))))
+                            .execute(&conn)?;
+
+                        create_toast(
+                            &conn,
+                            sacrifice,
+                            1_i16,
+                            "Your password was changed".to_owned(),
+                        )
+                    })
+                    .await?;
+
+                    return UserError::wrap_template(
+                        templates::UserSettingsTemplate {
+                            user,
+                            id: Some(identity),
+                            status_error: false,
+                            password_error: false,
                             username_error: false,
                         }
                         .into_response(),
@@ -418,8 +477,111 @@ pub async fn post_settings_user(
         None => (),
     };
 
+    match data.0.status {
+        Some(new_status) => {
+            let sacrifice = user.id;
+            let sacrifice_status = new_status.clone();
+            let conn = pool.get()?;
+            block(move || {
+                use crate::db::schema::users::dsl::*;
+                use diesel::{
+                    query_dsl::filter_dsl::FilterDsl, update, ExpressionMethods, RunQueryDsl,
+                };
+
+                update(users.filter(id.eq(&sacrifice)))
+                    .set(status.eq(zero_trim(&sacrifice_status)))
+                    .execute(&conn)?;
+
+                create_toast(
+                    &conn,
+                    sacrifice,
+                    1_i16,
+                    "Your status was changed".to_owned(),
+                )
+            })
+            .await?;
+
+            user.status = new_status;
+
+            return UserError::wrap_template(
+                templates::UserSettingsTemplate {
+                    user,
+                    id: Some(identity),
+                    status_error: false,
+                    password_error: false,
+                    username_error: false,
+                }
+                .into_response(),
+            );
+        }
+        None => (),
+    };
+
+    match data.0.username {
+        Some(new_username) => {
+            let sacrifice_id = user.id;
+            let sacrifice_new_username = new_username.clone();
+            let conn = pool.get()?;
+            match block(move || {
+                use crate::db::schema::users::dsl::*;
+                use diesel::{
+                    query_dsl::filter_dsl::FilterDsl, update, ExpressionMethods, RunQueryDsl,
+                };
+
+                match get_user_by_username(&conn, sacrifice_new_username.clone())? {
+                    Some(u) => {
+                        println!("{}/{}", u.username, u.id);
+                        Err(UserError::ValidationError("Username in use".to_owned()))
+                    }
+                    None => {
+                        update(users.filter(id.eq(&sacrifice_id)))
+                            .set(username.eq(zero_trim(&sacrifice_new_username)))
+                            .execute(&conn)?;
+
+                        Ok(create_toast(
+                            &conn,
+                            sacrifice_id,
+                            1_i16,
+                            "Your username was changed".to_owned(),
+                        )?)
+                    }
+                }
+            })
+            .await
+            {
+                Ok(_) => {
+                    user.username = new_username;
+                    return UserError::wrap_template(
+                        templates::UserSettingsTemplate {
+                            user,
+                            id: Some(identity),
+                            status_error: false,
+                            password_error: false,
+                            username_error: false,
+                        }
+                        .into_response(),
+                    );
+                }
+                Err(why) => {
+                    eprintln!("{:?}", why);
+                    return UserError::wrap_template(
+                        templates::UserSettingsTemplate {
+                            user,
+                            id: Some(identity),
+                            status_error: false,
+                            password_error: false,
+                            username_error: true,
+                        }
+                        .into_response(),
+                    );
+                }
+            }
+        }
+        None => (),
+    };
+
     return Err(UserError::InternalError(
-        "Failed to respond appropiatly".to_owned(),
+        "Failed to respond appropriately".to_owned(),
     ));
 }
 
@@ -447,37 +609,12 @@ pub async fn post_register_user(
     let username_error = form.username.len() > 40_usize
         || form.username.len() < 1_usize
         || !form.username.is_ascii();
-    let mut password_error = false;
     let cookie_error = match &form.cookies {
         Some(content) => content != "on",
         None => true,
     };
-
-    if form.password.len() < 6_usize {
-        // check by going over chars and checking if one number, one uppercase and on lowercase is satisfied
-        let mut number = false;
-        let mut uppercase = false;
-        let mut lowercase = false;
-        let mut ascii = true;
-        for character in form.password.chars() {
-            if !character.is_ascii() {
-                ascii = false;
-            } else if character.is_ascii_digit() {
-                number = true;
-            } else if character.is_ascii_lowercase() {
-                lowercase = true
-            } else if character.is_ascii_uppercase() {
-                uppercase = true;
-            }
-        }
-
-        if !ascii || !lowercase || !uppercase || !number {
-            password_error = true;
-        }
-    } else {
-        password_error = false;
-    }
-
+    let password_error = check_password(&form.password);
+    println!("{}/{}", form.password, password_error);
     if username_error || password_error || cookie_error {
         return UserError::wrap_template(
             templates::UserRegisterTemplate {

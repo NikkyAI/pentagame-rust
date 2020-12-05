@@ -18,6 +18,31 @@ pub struct GameMove {
 }
 
 /*
+Alerts:
+    Alerts are fetched over the API and should be shown as toasts (see beta notification toast in base.html)
+
+    header_type: i16/ smallint -> Title (should be evaluated after fetching)
+                -1: danger
+                    ONLY TRIGGERED BY ADMIN: reserved for e.g. notification about db leak (let's hope I never need top use this)
+                 0: warning || info - Notification
+                    This may be a manual alert triggered by an admin
+                 1: info - Update
+                    Server got an update
+                 2: warning - Maintenance
+                    Server may go into maintenance at specified time
+
+*/
+#[derive(Identifiable, Queryable, Associations, PartialEq, Debug)]
+#[table_name = "alerts"]
+#[belongs_to(User)]
+pub struct Alert {
+    pub id: i32,
+    pub user_id: Uuid,
+    pub header_type: i16,
+    pub message: String,
+}
+
+/*
 States:
     Player 1-5 = pid. This is order is based around the `rank` attribute of the UserGame
 

@@ -33,6 +33,7 @@ pub enum UserError {
     AuthorizationError(String),
     ValidationError(String),
     BlockingError(String),
+    NotFoundError(),
 }
 
 impl ResponseError for UserError {
@@ -50,6 +51,11 @@ impl ResponseError for UserError {
             StatusCode::BAD_REQUEST => templates::ErrorTemplate {
                 message: "Seems like you submitted a corrupted/ invalid form".to_owned(),
                 code: 400,
+                id: None
+            }.into_response(),
+            StatusCode::NOT_FOUND => templates::ErrorTemplate {
+                message: "It seems like te content you requested doesn't exist".to_owned(),
+                code: 404,
                 id: None
             }
             .into_response(),
@@ -77,6 +83,7 @@ impl ResponseError for UserError {
             UserError::InternalError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
             UserError::AuthorizationError { .. } => StatusCode::UNAUTHORIZED,
             UserError::ValidationError { .. } => StatusCode::BAD_REQUEST,
+            UserError::NotFoundError { .. } => StatusCode::NOT_FOUND,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

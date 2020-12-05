@@ -1,6 +1,6 @@
-const path = require("path");
-const dist = path.resolve(__dirname, "./dist/");
-const webpack = require("webpack");
+const path = require('path');
+const dist = path.resolve(__dirname, './dist/');
+const webpack = require('webpack');
 
 /*
 SASS/ PurgeCSS is not handled here, because there have been some problems with setting it up consistently
@@ -10,21 +10,22 @@ for refernce see: /scripts/compile.sh
 
 let banner = new webpack.BannerPlugin({
   banner:
-    "fullhash:[fullhash], chunkhash:[chunkhash], name:[name], filebase:[filebase], query:[query], file:[file]",
+    'fullhash:[fullhash], chunkhash:[chunkhash], name:[name], filebase:[filebase], query:[query], file:[file]'
 });
 
 module.exports = {
-  mode: "development", // change to 'development' when you need to debug in browser
+  mode: 'development', // change to 'development' when you need to debug in browser
   entry: {
-    main: "./js/main.js",
-    game: "./js/game.js",
-    settings: "./js/settings.js",
-    "game-join": "./js/game-join.js",
+    alert: './js/alert.js',
+    main: './js/main.js',
+    game: './js/game.js',
+    settings: './js/settings.js',
+    'game-join': './js/game-join.js'
   },
   plugins: [banner],
   output: {
     path: dist,
-    publicPath: "/static/js/",
-    filename: "[name].js",
-  },
+    publicPath: '/static/js/',
+    filename: '[name].js'
+  }
 };

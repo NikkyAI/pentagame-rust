@@ -19,5 +19,5 @@ pub struct SettingsForm {
     pub username: Option<String>,
     pub password: Option<String>,
     pub old_password: Option<String>,
-    pub status: Option<String>
+    pub status: Option<String>,
 }

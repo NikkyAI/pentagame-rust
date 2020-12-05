@@ -1,8 +1,8 @@
 use super::errors::APIError;
 use super::requests::{GetGameRequest, PostLoginRequest};
 use super::responses::{GetGameResponse, PostLoginResponse};
-use crate::auth::{guard_api, verify_hash};
-use crate::db::actions::{get_game, get_user_by_username};
+use crate::auth::{guard_api, guard_api_with_user, verify_hash};
+use crate::db::actions::{get_game, get_user_alerts, get_user_by_username};
 use crate::db::model::SlimUser;
 use crate::frontend::routes::DbPool;
 use actix_identity::Identity;
@@ -73,4 +73,17 @@ pub async fn post_login(
             authenticated: false,
         }))
     }
+}
+
+/*
+Alerts - see db/models.rs for specifications of header_types and more
+*/
+pub async fn get_alerts(pool: Data<DbPool>, id: Option<SlimUser>) -> APIResponse {
+    let identity = guard_api_with_user(id)?;
+    let conn = pool.get()?;
+
+    let sacrifice = identity.id.clone();
+    let alerts = block(move || get_user_alerts(&conn, sacrifice)).await?;
+
+    Ok(HttpResponse::Ok().json(alerts))
 }

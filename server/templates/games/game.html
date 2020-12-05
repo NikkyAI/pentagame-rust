@@ -1,7 +1,7 @@
 {% extends "base.html" %} {% block title %} Overview {% endblock %} {% block
 content %}
 
-<div class="row h-100" style="min-height: 80vh;">
+<div class="row h-100" style="min-height: 80vh">
   <div class="col-md-2">
     <div class="card bg-dark text-white">
       <div class="card-body">
@@ -71,16 +71,28 @@ content %}
 
 <div class="fab">
   <div class="fab-menu collapse mb-2" id="fab-menu">
-    <div class="btn-group-vertical">
-      <button type="button" class="btn btn-lg btn-info">
-        <i class="fas fa-low-vision"></i>
-      </button>
-      <button type="button" class="btn btn-lg btn-success">
-        <i class="fas fa-microchip"></i>
-      </button>
-      <button type="button" class="btn btn-lg btn-warning">
-        <i class="fas fa-quote-right"></i>
-      </button>
+    <div class="row btn-group-vertical">
+      <div class="col" id="fab-container">
+        <button type="button" class="fab-btn btn btn-lg btn-danger">
+          <i class="fas fa-sign-out-alt"></i>
+          <span class="fab-text">Leave game</span>
+        </button>
+      </div>
+    </div>
+    <div class="row mt-2">
+      <div class="col">
+        <div class="btn-group-vertical">
+          <button type="button" class="btn btn-lg btn-info">
+            <i class="fas fa-low-vision"></i>
+          </button>
+          <button type="button" class="btn btn-lg btn-success">
+            <i class="fas fa-microchip"></i>
+          </button>
+          <button type="button" class="btn btn-lg btn-warning">
+            <i class="fas fa-quote-right"></i>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
   <button

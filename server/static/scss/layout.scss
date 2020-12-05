@@ -8,6 +8,17 @@ body {
   height: 100vh;
 }
 
+#toast-container {
+  position: fixed;
+  top: 3rem;
+  right: 0.5rem;
+  z-index: 1030;
+}
+
+#navbar-dropdown {
+  z-index: 1040;
+}
+
 .input-name {
   position: relative;
   overflow: hidden;
@@ -19,9 +30,9 @@ body {
   }
 }
 
-.input-name > input[type="text"]:focus,
-.input-name > input[type="password"]:focus,
-.input-name > input[type="number"]:focus,
+.input-name > input[type='text']:focus,
+.input-name > input[type='password']:focus,
+.input-name > input[type='number']:focus,
 .input-name > textarea:focus {
   border: none;
   outline: none;
@@ -38,9 +49,9 @@ body {
   background-color: $dark;
 }
 
-.input-name > input[type="text"]:focus + .underline-animation,
-.input-name > input[type="password"]:focus + .underline-animation,
-.input-name > input[type="number"]:focus + .underline-animation,
+.input-name > input[type='text']:focus + .underline-animation,
+.input-name > input[type='password']:focus + .underline-animation,
+.input-name > input[type='number']:focus + .underline-animation,
 .input-name > textarea:focus + .underline-animation {
   left: 0;
   max-width: 40rem;
@@ -59,7 +70,7 @@ body {
 
 input.id,
 textarea.id {
-  font-family: "Font Awesome 5 Free", Arial, Helvetica, sans-serif;
+  font-family: 'Font Awesome 5 Free', Arial, Helvetica, sans-serif;
   font-style: normal;
   font-weight: normal;
   text-decoration: inherit;
@@ -78,7 +89,34 @@ textarea.id {
   right: 1rem;
   bottom: 1rem;
 
-  > button:hover {
+  button:hover ~ {
     transform: scale(1.05);
+  }
+}
+
+.fas-text {
+  font-family: 'Font Awesome 5 Free', Arial, Helvetica, sans-serif;
+}
+
+.fab-text {
+  font-family: 'Font Awesome 5 Brands', Arial, Helvetica, sans-serif;
+}
+
+.fab-btn {
+  width: fit-content;
+
+  &:hover {
+    overflow: hidden;
+
+    > .fab-text {
+      transition: all ease-in 1s;
+      display: inline-block;
+      opacity: 1;
+    }
+  }
+
+  > .fab-text {
+    display: none;
+    opacity: 0;
   }
 }

@@ -1,9 +1,18 @@
 table! {
+    alerts (id) {
+        id -> Int4,
+        user_id -> Uuid,
+        header_type -> Int2,
+        message -> Text,
+    }
+}
+
+table! {
     game_moves (id) {
         id -> Int4,
         user_id -> Uuid,
         game_id -> Int4,
-        umove -> Array<Int4>,
+        umove -> Array<Int2>,
     }
 }
 
@@ -37,6 +46,7 @@ table! {
     }
 }
 
+joinable!(alerts -> users (user_id));
 joinable!(game_moves -> games (game_id));
 joinable!(game_moves -> users (user_id));
 joinable!(games -> users (user_id));
@@ -44,6 +54,7 @@ joinable!(user_games -> games (game_id));
 joinable!(user_games -> users (user_id));
 
 allow_tables_to_appear_in_same_query!(
+    alerts,
     game_moves,
     games,
     user_games,

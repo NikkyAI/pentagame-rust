@@ -1,3 +1,4 @@
+{% let auth -%}
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -81,8 +82,8 @@
             >
               <i class="fas fa-user-circle"></i>
             </button>
-            <ul class="dropdown-menu dropdown-dark">
-              {% match id %} {% when Some with (id) %}
+            <ul class="dropdown-menu dropdown-dark" id="navbar-dropdown">
+              {% match id %} {% when Some with (id) %} {% let auth = true -%}
               <li>
                 <a class="dropdown-item" href="/users/view/{{ id.id }}">
                   <i class="fas fa-user-alt"></i>
@@ -104,7 +105,7 @@
                   Logout
                 </a>
               </li>
-              {% when None %}
+              {% when None %} {% let auth = false -%}
               <li>
                 <a class="dropdown-item" href="/users/login">
                   <i class="fas fa-sign-in-alt"></i>
@@ -134,26 +135,121 @@
       class="page-footer mt-3 font-small bg-dark text-white w-100"
     >
       <!-- Copyright -->
-      <div class="footer-copyright text-center py-3">
-        © 2020 Copyright
-        <a href="https://github.com/Penta-Game/pentagame" class="copyright">
-          GPLv3.0 or later
-        </a>
-        @
-        <a href="https://cobalt.rocks/pages/contact/" class="copyright">
-          Cobalt
-        </a>
-        <a class="ml-1 text-white" href="/content/cookies"> - Cookies </a>
+      <div class="footer-copyright text-white py-3">
+        <div class="container">
+          <div class="row justify-content-center align-items-start">
+            <div class="col-6 col-sm-4">
+              <h5 class="title-white">Pentagame Online</h5>
+              <p class="m-0">
+                <a
+                  href="https://github.com/Penta-Game/pentagame/blob/master/LICENSE"
+                  class="mr-1 btn btn-dark btn-sm text-decoration-none fas-text"
+                >
+                   2020 Copyright
+                </a>
+                <a
+                  href="https://github.com/Penta-Game/pentagame"
+                  class="mr-1 btn btn-dark btn-sm text-decoration-none"
+                >
+                  GPLv3.0 or later
+                </a>
+                <a
+                  href="https://cobalt.rocks/"
+                  class="ml-1 btn btn-dark btn-sm text-decoration-none"
+                >
+                  by Cobalt
+                </a>
+              </p>
+              <p class="m-0">
+                <a
+                  class="text-white fab-text text-decoration-none btn btn-dark btn-sm"
+                  href="https://github.com/Penta-Game/pentagame"
+                >
+                   Code on Github
+                </a>
+              </p>
+            </div>
+
+            <div class="col-6 col-sm-4">
+              <h5 class="title-white">Quick Links</h5>
+              <p class="m-0">
+                <a
+                  class="text-white btn btn-dark btn-sm text-decoration-none"
+                  href="https://pentagame.org"
+                >
+                  <i class="fas fa-shopping-cart"></i> Pentagame shop
+                </a>
+              </p>
+              <p class="m-0">
+                <a
+                  class="text-white btn btn-dark btn-sm text-decoration-none"
+                  href="/content/cookies"
+                >
+                  <i class="fas fa-cookie"></i> Cookies
+                </a>
+              </p>
+
+              <p class="m-0">
+                <a
+                  class="text-white btn btn-dark btn-sm text-decoration-none"
+                  href="/content/rules"
+                >
+                  <i class="fas fa-file-alt"></i> Rules
+                </a>
+              </p>
+              <p class="m-0">
+                <a
+                  class="text-white btn btn-dark btn-sm text-decoration-none"
+                  href="https://github.com/Penta-Game/pentagame/blob/master/CODE_OF_CONDUCT.md"
+                >
+                  <i class="fas fa-users"></i> Code of Conduct
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
       <!-- #Copyright -->
     </footer>
     <!-- #Footer -->
+
+    <!-- Toasts -->
+    <div aria-live="polite" aria-atomic="true" id="toast-container">
+      <div
+        class="toast mt-4 bg-dark text-white"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+      >
+        <div class="toast-header bg-dark">
+          <img
+            src="/static/images/brand.svg"
+            width="20"
+            height="20"
+            class="rounded mr-2"
+            alt="Icon"
+          />
+          <strong class="mr-auto text-white">Pentagame</strong>
+          <small class="text-muted">just now</small>
+          <button
+            type="button"
+            class="btn-close bg-white"
+            data-dismiss="toast"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="toast-body">This application is in closed-beta</div>
+      </div>
+    </div>
+    <!-- #Toasts -->
 
     <!-- JS -->
     <script src="/static/node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
     <script src="/static/dist/main.js"></script>
 
     <!-- Page specific resources -->
-    {% block includes %}{% endblock %}
+    {% if auth %}
+    <script src="/static/dist/alert.js"></script>
+    {% endif %} {% block includes %}{% endblock %}
   </body>
 </html>

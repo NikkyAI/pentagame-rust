@@ -91,3 +91,10 @@ pub struct UserRegisterTemplate {
     pub cookie_error: bool,
     pub password_error: bool,
 }
+
+#[derive(Template)]
+#[template(path = "users/view.html")]
+pub struct UserViewTemplate {
+    pub user: User,
+    pub id: Option<SlimUser>,
+}
