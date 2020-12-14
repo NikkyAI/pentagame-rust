@@ -6,8 +6,11 @@ pub enum GraphErr {
     // There is no vertex with the given id in the graph
     NoSuchVertex,
 
+    /*
+    Kept for extendability
     // There is no such edge in the graph
     NoSuchEdge,
+    */
 
     // Could not add an edge to the graph
     CannotAddEdge,

@@ -30,9 +30,8 @@ diesel = { version = "1.4.5", features = [
     "uuid",
     "chrono"
 ] }
-
 futures = "0.3.6"
-hashbrown = { version = "0.9.1", features = ["serde", "ahash-compile-time-rng"] }
+hashbrown = { version = "0.9.1", features = ["serde", "inline-more", "rayon"] }
 lazy_static = "1.4"
 rand = "0.7.3"
 r2d2 = "0.8.9"
@@ -42,3 +41,4 @@ sodiumoxide = "0.2.6"
 toml = "0.5.7"
 time = "0.2.22"
 uuid = { version = ">=0.2.0, <0.7.0", features = ["serde", "v4"] }
+rayon = "1.5"

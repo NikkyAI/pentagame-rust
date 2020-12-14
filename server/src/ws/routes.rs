@@ -1,8 +1,8 @@
 use crate::api::errors::APIError;
-use crate::auth::guard_api_with_user;
-use crate::db::actions::get_user_game;
+use crate::auth::{guard_api_with_user, guard_with_user};
+use crate::db::actions::{create_toast, get_user_game, leave_game};
 use crate::db::model::SlimUser;
-use crate::frontend::routes::DbPool;
+use crate::frontend::routes::{redirect, DbPool, UserResponse};
 use crate::ws::{actor::GameServer, session::WsGameSession};
 use actix::prelude::*;
 use actix_web::{web::block, web::Data, web::HttpResponse, web::Payload, HttpRequest};
@@ -46,4 +46,20 @@ pub async fn game_route(
         &req,
         stream,
     )?)
+}
+
+pub async fn get_game_leave_route(id: Option<SlimUser>, pool: Data<DbPool>) -> UserResponse {
+    let user = guard_with_user(id)?;
+
+    // leave game
+    let conn = pool.get()?;
+    let cloned_id = user.id.clone();
+
+    block(move || leave_game(&conn, cloned_id)).await?;
+
+    // alert user
+    let conn = pool.get()?;
+    block(move || create_toast(&conn, user.id, 1, "You left a game!".to_owned())).await?;
+
+    Ok(redirect("/"))
 }

@@ -1,7 +1,10 @@
 use crate::api::errors::APIError;
 use crate::config::{DatabaseConfig, CONFIG};
-use crate::db::actions::{get_game, get_game_users, get_slim_game, get_user_game};
+use crate::db::actions::{
+    fetch_latest_move, get_game, get_game_users, get_slim_game, get_user_game, make_new_move,
+};
 use crate::frontend::routes::DbPool;
+use crate::graph::{graph::GraphState, graph::GRAPH, models::MOVE};
 use actix::prelude::*;
 use hashbrown::{HashMap, HashSet};
 use rand::{self, rngs::ThreadRng, Rng};
@@ -55,6 +58,17 @@ pub struct QueryGameMessage {
     pub gid: i32,
 }
 
+#[derive(Message)]
+#[rtype(result = "Result<bool, APIError>")]
+pub struct MakeMoveMessage {
+    // user id from game session
+    pub uid: Uuid,
+    // move to make/ validate
+    pub action: MOVE,
+    // related game id
+    pub gid: i32,
+}
+
 // New game session is created
 #[derive(Message)]
 #[rtype(result = "Result<usize, APIError>")]
@@ -83,11 +97,12 @@ pub struct ClientMessage {
     | action | description         | data                | host only |
     | ------ | ------------------- | ----------------    | --------- |
     | 0      | get users           | {}                  |     X     |
-    | 1      | make move           | {"move": String}    |     X     |
-    | 2      | Place Stopper       | {"move": String}    |     X     |
-    | 3      | leave game          | {}                  |     X     |
-    | 4      | start game          | {"message": String} |     ✓     |
-    | 5      | stop game           | {"message": String} |     ✓     |
+    | 1      | get game state      | {}                  |           |
+    | 2      | make move           | {"move": [MOVE]}    |     X     |
+    | 3      | Place Stopper       | {"move": String}    |     X     |
+    | 4      | leave game          | {}                  |     X     |
+    | 5      | start game          | {"message": String} |     ✓     |
+    | 6      | stop game           | {"message": String} |     ✓     |
     */
     pub action: u8,
     pub data: HashMap<String, String>,
@@ -109,6 +124,7 @@ pub struct Join {
 pub struct GameServer {
     sessions: HashMap<usize, Recipient<Message>>,
     games: HashMap<i32, HashSet<usize>>,
+    states: HashMap<i32, GraphState>,
     pool: DbPool,
     rng: ThreadRng,
 }
@@ -118,6 +134,7 @@ impl Default for GameServer {
         println!("Triggered default creation");
         GameServer {
             games: HashMap::new(),
+            states: HashMap::new(),
             sessions: HashMap::new(),
             pool: DatabaseConfig::init_pool(CONFIG.clone())
                 .expect("Database pool failed to initialize"),
@@ -214,6 +231,61 @@ impl Handler<Disconnect> for GameServer {
     }
 }
 
+// handler for user move
+impl Handler<MakeMoveMessage> for GameServer {
+    type Result = Result<bool, APIError>;
+
+    fn handle(&mut self, msg: MakeMoveMessage, _: &mut Context<Self>) -> Self::Result {
+        // get connections and build board
+        let conn = self.pool.get()?;
+        let state = self.states.get(&msg.gid).unwrap();
+        let mut graph = GRAPH.clone();
+        graph.load_state(*state)?;
+
+        // fetch starting point (db is trusted source)
+        let src = match fetch_latest_move(&conn, msg.gid, msg.uid)? {
+            // take response and translate to array
+            Some(src) => [
+                *src.get(0).unwrap(),
+                *src.get(1).unwrap(),
+                *src.get(2).unwrap(),
+            ],
+            // no move was made. Fall back to
+            None => [msg.action.1.into(), 0, 0],
+        };
+        let dest = [msg.action.0[3], msg.action.0[4], msg.action.0[5]];
+
+        // validate move
+        let result = graph.validate(&src, &dest)?;
+
+        match result.0 {
+            true => {
+                // add move to db
+                make_new_move(
+                    &conn,
+                    msg.uid,
+                    msg.gid,
+                    [
+                        *src.get(0).unwrap(),
+                        *src.get(1).unwrap(),
+                        *src.get(2).unwrap(),
+                        dest[0],
+                        dest[1],
+                        dest[2],
+                        result.1.into(),
+                    ],
+                )?;
+                // send message of move to all other players
+
+                Ok(true)
+            }
+            false => Err(APIError::ValidationError(
+                "This move isn't possible".to_owned(),
+            )),
+        }
+    }
+}
+
 // handler for user query message
 impl Handler<QueryUsersMessage> for GameServer {
     type Result = Result<Vec<(Uuid, String)>, APIError>;
@@ -254,19 +326,11 @@ impl Handler<ClientMessage> for GameServer {
                 users.iter().for_each(|(id, name)| {
                     data.insert(id.to_string(), name.clone());
                 });
-                match self.sessions.get(&msg.id).unwrap().do_send(Message {
+
+                Ok(self.sessions.get(&msg.id).unwrap().do_send(Message {
                     action: msg.action,
                     data,
-                }) {
-                    Ok(_) => (),
-                    Err(_) => {
-                        return Err(APIError::InternalError(
-                            "Failed to deliver message to websocket".to_owned(),
-                        ));
-                    }
-                }
-
-                Ok(())
+                })?)
             }
             1 => Ok(()),
             _ => Ok(()),

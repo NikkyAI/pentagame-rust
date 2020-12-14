@@ -1,6 +1,9 @@
-use super::actor::{Connect, Disconnect, GameServer, Message, QueryGameMessage, QueryUsersMessage};
+use super::actor::{
+    Connect, Disconnect, GameServer, MakeMoveMessage, Message, QueryGameMessage, QueryUsersMessage,
+};
 use super::errors::{MESSAGE_FORMAT_ERROR, UNIMPLEMENTED_ERROR};
 use crate::db::model::SlimUser;
+use crate::graph::models::Move;
 use actix::prelude::*;
 use actix_web_actors::ws;
 use hashbrown::HashMap;
@@ -186,6 +189,44 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsGameSession {
                                         };
 
                                         ctx.text(data);
+
+                                    }
+                                    // something is wrong with game server
+                                    Err(why) => {
+                                        eprintln!("The gamserver crashed or game was closed: {:?}", why);
+                                        ctx.stop()
+                                    }
+                                };
+                                fut::ready(())
+
+                            })
+                            .wait(ctx);
+                            }
+                            2 => {
+                                let parsed_move = match Move::from_action(action.data) {
+                                    Ok(parsed_move) => parsed_move,
+                                    Err(e) => {
+                                        ctx.text(e.to_string());
+                                        return;
+                                    }
+                                };
+
+                                self.addr.send(MakeMoveMessage { action: parsed_move.action, gid: self.game, uid: self.uid.id })
+                            .into_actor(self)
+                            .then(|res, _, ctx| {
+                                let _ = match res {
+                                     Ok(result) => {
+                                        let state = match result {
+                                                Ok(state) => state,
+                                                Err(_) => {
+                                                    ctx.stop();
+                                                    return fut::ready(());
+                                                }
+                                        };
+
+                                        println!("{:?}", state);
+
+                                        ctx.text("LOL");
 
                                     }
                                     // something is wrong with game server

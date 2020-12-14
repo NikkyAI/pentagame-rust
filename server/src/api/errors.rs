@@ -1,4 +1,5 @@
 // imports
+use crate::graph::errors::GraphErr;
 use actix::dev::SendError;
 use actix_web::{
     dev::HttpResponseBuilder, error::BlockingError, error::Error as WebError, error::ResponseError,
@@ -70,6 +71,13 @@ impl From<ParseError> for APIError {
 
 impl From<SerializeError> for APIError {
     fn from(error: SerializeError) -> APIError {
+        APIError::InternalError(error.to_string())
+    }
+}
+
+// Convert Internal Graoh erros to internal error
+impl From<GraphErr> for APIError {
+    fn from(error: GraphErr) -> APIError {
         APIError::InternalError(error.to_string())
     }
 }
