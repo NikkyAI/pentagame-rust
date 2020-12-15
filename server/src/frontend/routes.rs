@@ -395,18 +395,14 @@ pub async fn get_settings_user(id: Option<SlimUser>, pool: Data<DbPool>) -> User
 
 pub async fn post_settings_user(
     id: Option<SlimUser>,
+    identity: Identity,
     pool: Data<DbPool>,
     data: Form<forms::SettingsForm>,
 ) -> UserResponse {
     let conn = pool.get()?;
-    let identity = guard_with_user(id)?;
+    let slim_user = guard_with_user(id)?;
 
-    println!(
-        "username: {:?} password: {:?} new-password: {:?} status: {:?}",
-        data.0.username, data.0.password, data.0.old_password, data.0.status
-    );
-
-    let sacrifice = identity.username.clone();
+    let sacrifice = slim_user.username.clone();
     let result = block(move || get_user_by_username(&conn, sacrifice)).await?;
 
     let mut user = match result {
@@ -414,7 +410,7 @@ pub async fn post_settings_user(
         None => {
             return Err(UserError::ValidationError(format!(
                 "User {} is deleted or achived",
-                identity.username
+                slim_user.username
             )));
         }
     };
@@ -426,7 +422,7 @@ pub async fn post_settings_user(
                     return UserError::wrap_template(
                         templates::UserSettingsTemplate {
                             user,
-                            id: Some(identity),
+                            id: Some(slim_user),
                             status_error: false,
                             password_error: true,
                             username_error: false,
@@ -459,7 +455,7 @@ pub async fn post_settings_user(
                     return UserError::wrap_template(
                         templates::UserSettingsTemplate {
                             user,
-                            id: Some(identity),
+                            id: Some(slim_user),
                             status_error: false,
                             password_error: false,
                             username_error: false,
@@ -506,7 +502,7 @@ pub async fn post_settings_user(
             return UserError::wrap_template(
                 templates::UserSettingsTemplate {
                     user,
-                    id: Some(identity),
+                    id: Some(slim_user),
                     status_error: false,
                     password_error: false,
                     username_error: false,
@@ -530,8 +526,7 @@ pub async fn post_settings_user(
 
                 match get_user_by_username(&conn, sacrifice_new_username.clone())? {
                     Some(u) => {
-                        println!("{}/{}", u.username, u.id);
-                        Err(UserError::ValidationError("Username in use".to_owned()))
+                        Err(UserError::ValidationError(format!("Username {} in use", u.username)))
                     }
                     None => {
                         update(users.filter(id.eq(&sacrifice_id)))
@@ -551,10 +546,15 @@ pub async fn post_settings_user(
             {
                 Ok(_) => {
                     user.username = new_username;
+
+                    // update Identity
+                    let user_string = serde_json::to_string(&SlimUser::from(user.clone())).unwrap();
+                    identity.remember(user_string);
+
                     return UserError::wrap_template(
                         templates::UserSettingsTemplate {
                             user,
-                            id: Some(identity),
+                            id: Some(slim_user),
                             status_error: false,
                             password_error: false,
                             username_error: false,
@@ -567,7 +567,7 @@ pub async fn post_settings_user(
                     return UserError::wrap_template(
                         templates::UserSettingsTemplate {
                             user,
-                            id: Some(identity),
+                            id: Some(slim_user),
                             status_error: false,
                             password_error: false,
                             username_error: true,
@@ -614,7 +614,6 @@ pub async fn post_register_user(
         None => true,
     };
     let password_error = check_password(&form.password);
-    println!("{}/{}", form.password, password_error);
     if username_error || password_error || cookie_error {
         return UserError::wrap_template(
             templates::UserRegisterTemplate {

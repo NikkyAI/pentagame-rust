@@ -1,2 +1,2 @@
 setup:
-	bash script/full-setup.sh
+	bash scripts/full-setup.sh

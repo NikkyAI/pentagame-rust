@@ -43,18 +43,18 @@ impl ResponseError for UserError {
         let response = match self.status_code() {
             StatusCode::UNAUTHORIZED => Ok(redirect("/users/login")),
             StatusCode::INTERNAL_SERVER_ERROR => templates::ErrorTemplate {
-                message: format!("Something went terribly wrong on our side. We are sorry for any caused inconvenience."),
+                message: self.into(),
                 code: 500,
                 id: None
             }
             .into_response(),
             StatusCode::BAD_REQUEST => templates::ErrorTemplate {
-                message: "Seems like you submitted a corrupted/ invalid form".to_owned(),
+                message: self.into(),
                 code: 400,
                 id: None
             }.into_response(),
             StatusCode::NOT_FOUND => templates::ErrorTemplate {
-                message: "It seems like te content you requested doesn't exist".to_owned(),
+                message: self.into(),
                 code: 404,
                 id: None
             }
@@ -146,7 +146,7 @@ impl From<BlockingError<UserError>> for UserError {
 impl From<BlockingError<DBError>> for UserError {
     fn from(error: BlockingError<DBError>) -> UserError {
         match error {
-            BlockingError::Error(db_error) => UserError::InternalError(db_error.to_string()),
+            BlockingError::Error(db_error) => UserError::from(db_error),
             BlockingError::Canceled => UserError::BlockingError("Thread blocking error".into()),
         }
     }
@@ -165,7 +165,35 @@ impl From<DBError> for UserError {
                 }
                 UserError::InternalError("Unknown database error".to_owned())
             }
+            DBError::NotFound { .. } => UserError::NotFoundError(),
             _ => UserError::InternalError("Unknown database error".to_owned()),
+        }
+    }
+}
+
+// String casting for UserErrors
+impl From<UserError> for String {
+    fn from(error: UserError) -> String {
+        match error {
+            UserError::NotFoundError { .. } => "Didn't found the requested resource".to_owned(),
+            UserError::PoolError(message) => message,
+            UserError::InternalError(message) => message,
+            UserError::AuthorizationError(message) => message,
+            UserError::ValidationError(message) => message,
+            UserError::BlockingError(message) => message,
+        }
+    }
+}
+
+impl<'a> From<&'a UserError> for String {
+    fn from(error: &'a UserError) -> String {
+        match error {
+            UserError::NotFoundError { .. } => "Didn't found the requested resource".to_owned(),
+            UserError::PoolError(message) => message.to_owned(),
+            UserError::InternalError(message) => message.to_owned(),
+            UserError::AuthorizationError(message) => message.to_owned(),
+            UserError::ValidationError(message) => message.to_owned(),
+            UserError::BlockingError(message) => message.to_owned(),
         }
     }
 }

@@ -1,8 +1,9 @@
 // imports
 use super::helper::zero_trim;
-use super::model::{Game, NewGame, NewUserGame, SlimUser, User, UserGame};
+use super::model::{Game, NewGame, NewGameMove, NewUserGame, SlimUser, User, UserGame};
 use super::schema::users;
 use crate::auth::generate_hash;
+use crate::graph::models::AMOVE;
 use cached::{proc_macro::cached, stores::TimedCache};
 use chrono::offset::Local;
 use diesel::{
@@ -239,6 +240,7 @@ pub fn leave_game(conn: &PgConnection, uid: Uuid) -> Result<usize, Error> {
 
     let subquery = game_moves::table
         .filter(user_id.eq(&uid))
+        .distinct_on(id)
         .select(id)
         .into_boxed();
 
@@ -298,4 +300,38 @@ pub fn create_toast(
         .execute(conn)?;
 
     Ok(())
+}
+
+pub fn fetch_latest_move(
+    conn: &PgConnection,
+    gid: i32,
+    uid: Uuid,
+) -> Result<Option<Vec<i16>>, Error> {
+    use super::schema::game_moves::dsl::*;
+
+    game_moves
+        .select(umove)
+        .limit(1)
+        .order(id.desc())
+        .filter(user_id.eq(uid))
+        .filter(game_id.eq(gid))
+        .first::<Vec<i16>>(conn)
+        .optional()
+}
+
+pub fn make_new_move(
+    conn: &PgConnection,
+    uid: Uuid,
+    gid: i32,
+    action: AMOVE,
+) -> Result<usize, Error> {
+    use super::schema::game_moves;
+
+    insert_into(game_moves::table)
+        .values(NewGameMove {
+            game_id: gid,
+            user_id: uid,
+            umove: action.to_vec(),
+        })
+        .execute(conn)
 }

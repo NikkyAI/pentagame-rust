@@ -73,13 +73,14 @@ pub async fn main() -> Result<()> {
                     .service(
                         web::resource("/ws/")
                             .data(server.clone())
-                            .to(ws_routes::game_route),
+                            .to(ws_routes::game_route)
                     )
                     .route("/join/{id}", web::get().to(routes::get_game_join))
+                    .route("/leave", web::get().to(ws_routes::get_game_leave_route))
                     .route("/", web::get().to(routes::get_game_overview))
                     .route("/create", web::get().to(routes::get_create_game))
                     .route("/create", web::post().to(routes::post_create_game))
-                    .route("/view/{id}", web::get().to(routes::get_view_game)),
+                    .route("/view/{id}", web::get().to(routes::get_view_game))
             )
             .service(
                 web::scope("/users")
