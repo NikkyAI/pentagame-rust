@@ -1,13 +1,17 @@
 // hash implmentations
 use super::errors::GraphErr;
-use super::models::FIELD;
+use super::models::{FIELD, LOCATION};
 use hashbrown::{HashMap, HashSet};
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::fmt::Debug;
 
-// Figures are simplified based on demoniation Rules
+// Figures are simplified based on denomination Rules
 pub type Figure = u8;
+// State containing Positzions of all figures (5 figures per player, 5 gray stoppers, 5 black stoppers)
+// LOCATION: ([i16; 3], u8)
+pub type GraphState = [LOCATION; 35];
 
 // vertexmap
 pub const BASE_VERTEX_MAP: [i16; 10] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]; // in case the naming changes these are statically mapped
@@ -24,7 +28,7 @@ pub const EDGE_MAP: [&[(i16, i16)]; 10] = [
     &[(6, 6)],
 ];
 
-#[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, Copy)]
+#[derive(Deserialize, Serialize, Hash, PartialEq, Eq, Debug, Clone, Copy)]
 pub struct Field {
     pub occupied: bool,
     pub owner: Option<Figure>,
@@ -41,6 +45,9 @@ pub struct Graph {
     /// Mapping of vertex ids and vertex values
     pub vertices: HashMap<FIELD, Field>,
 
+    // figure locations -> should map to FIELD with figure
+    pub figures_locations: HashMap<Field, FIELD>,
+
     // set for edges (doesn't require any weights)
     pub edges: HashMap<FIELD, Vec<FIELD>>,
 }
@@ -52,9 +59,10 @@ impl Field {
 }
 
 impl Graph {
-    pub fn new(size: usize) -> Graph {
+    pub fn new() -> Graph {
         return Graph {
-            vertices: HashMap::with_capacity(size),
+            figures_locations: HashMap::with_capacity(35),
+            vertices: HashMap::with_capacity(100_usize),
             edges: HashMap::new(),
         };
     }
@@ -64,9 +72,22 @@ impl Graph {
         self.edges.shrink_to_fit();
     }
 
-    pub fn fetch(&self, id: FIELD) -> Option<&Field> {
-        self.vertices.get(&id)
+    pub fn fetch(&self, id: FIELD) -> Result<&Field, GraphErr> {
+        match self.vertices.get(&id) {
+            Some(vertex) => Ok(vertex),
+            None => Err(GraphErr::NoSuchVertex {}),
+        }
     }
+
+    /*
+    Kept for later extendability
+    pub fn fetch_edge(&self, id: FIELD) -> Result<&Vec<FIELD>, GraphErr> {
+        match self.edges.get(&id) {
+            Some(edge) => Ok(edge),
+            None => Err(GraphErr::NoSuchEdge {}),
+        }
+    }
+    */
 
     pub fn add_edge(&mut self, fid: FIELD, sid: FIELD) -> Result<(), GraphErr> {
         // get existing vertex from edgemap
@@ -77,15 +98,15 @@ impl Graph {
             }
             None => {
                 let sids = vec![sid];
-                self.edges.insert(fid, sids.clone());
                 sids.to_owned()
             }
         };
 
         // add new edge and update edgemap
-        self.edges.insert(fid, old).unwrap();
-
-        Ok(())
+        match self.edges.insert(fid, old) {
+            Some(_) => Err(GraphErr::CannotAddEdge {}),
+            None => Ok(()),
+        }
     }
 
     pub fn add_vertex(&mut self, id: FIELD, field: Field) -> Result<FIELD, GraphErr> {
@@ -97,22 +118,11 @@ impl Graph {
 
     pub fn validate<'a>(&'a self, src: &'a FIELD, dest: &'a FIELD) -> Result<(bool, u8), GraphErr> {
         // check if specified vertices exists
-        let source = match self.vertices.get(src) {
-            Some(vertex) => (vertex, src),
-            None => {
-                return Err(GraphErr::NoSuchVertex {});
-            }
-        };
-
-        let destination = match self.vertices.get(dest) {
-            Some(vertex) => (vertex, dest),
-            None => {
-                return Err(GraphErr::NoSuchVertex {});
-            }
-        };
+        let source = self.fetch(*src)?;
+        let destination = self.fetch(*dest)?;
 
         // test with dijkstra if there's a possible path
-        match self.bfs(source, destination) {
+        match self.bfs((source, src), (destination, dest)) {
             Some(collider) => Ok((true, collider)),
             None => Ok((false, 0)),
         }
@@ -134,7 +144,7 @@ impl Graph {
         let mut visited: HashSet<FIELD> = HashSet::with_capacity(v);
         let mut queue: VecDeque<FIELD> = VecDeque::with_capacity(v);
 
-        // This step can't be skipped as the 'real' game field may have already occupied fields
+        // This step can't be skipped as the 'real' game field has already occupied fields
         self.vertices.iter().for_each(|(id, f)| {
             // mark occupied fields as already visited to prevent them from counting
             if f.occupied {
@@ -155,6 +165,7 @@ impl Graph {
             let id = queue.pop_front().unwrap();
             println!("{:?}", id);
             let edges = self.edges.get(&id).unwrap();
+
             for edge in edges {
                 let eq = edge == dest.1;
                 println!("QSize: {}", queue.len());
@@ -175,29 +186,62 @@ impl Graph {
         None
     }
 
+    pub fn load_state(&mut self, state: GraphState) -> Result<(), GraphErr> {
+        state.iter().for_each(|figure| {
+            self.figures_locations.insert(
+                Field {
+                    occupied: true,
+                    owner: Some(figure.1),
+                },
+                [figure.0[0], figure.0[1], figure.0[2]],
+            );
+        });
+
+        Ok(())
+    }
+
+    pub fn dump_state(&self) -> Vec<LOCATION> {
+        self.figures_locations
+            .clone()
+            .into_par_iter()
+            .map(|(field, location)| (location, field.owner.unwrap_or(u8::MAX)))
+            .collect()
+    }
+
     pub fn construct_graph() -> Result<Graph, GraphErr> {
-        let mut graph: Graph = Graph::new(100_usize);
-        let mut bmap: [FIELD; 10] = [[0, 0, 0]; 10];
+        let mut graph: Graph = Graph::new();
+        let mut base_map: [FIELD; 10] = [[0, 0, 0]; 10];
 
         // the base nodes (junction, corners) need to be preinserted to do effective EDGE and stop mapping
         for i in 0..BASE_VERTEX_MAP.len() {
-            bmap[i] = graph.add_vertex([BASE_VERTEX_MAP[i], 0, 0], Field::new(false, None))?;
+            base_map[i] = graph.add_vertex([BASE_VERTEX_MAP[i], 0, 0], Field::new(false, None))?;
         }
+
+        println!("Vertices: {:?}", graph.vertices);
+        println!("base_map: {:?}", base_map);
 
         // construct edges from edgemap. See pentagraph (python)
         for index in 0..EDGE_MAP.len() {
             let base_vertex = BASE_VERTEX_MAP[index];
-            let f_id = bmap[index];
+            let f_id = base_map[index];
             for (svertex, vcounter) in EDGE_MAP[index] {
                 let mut s_id =
                     graph.add_vertex([base_vertex, 1, *svertex], Field::new(false, None))?;
+
+                println!("Getting node {:?}: {:?}", s_id, graph.fetch(s_id)?);
+
                 let mut t_id = s_id; // This value is just to prevent warnings
+                println!("Adding Edge between edge points");
+                println!("Fid: {:?} Sid: {:?}", f_id, s_id);
                 graph.add_edge(f_id, s_id)?;
                 for count in 2..vcounter + 1 {
                     t_id = graph
                         .add_vertex([base_vertex, count, *svertex], Field::new(false, None))?;
+                    println!("Tid: {:?} Sid: {:?}", t_id, s_id);
                     graph.add_edge(t_id, s_id)?;
+                    println!("Adding Edgee between cross points");
                     graph.add_edge(s_id, t_id)?;
+
                     s_id = t_id;
                 }
                 graph.add_edge(t_id, [*svertex, 0, 0])?;
@@ -208,4 +252,8 @@ impl Graph {
 
         return Ok(graph);
     }
+}
+
+lazy_static! {
+    pub static ref GRAPH: Graph = Graph::construct_graph().expect("Failed to build empty graph");
 }
