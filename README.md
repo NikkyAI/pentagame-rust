@@ -76,3 +76,9 @@ The game state system is done with a recalculation based on te last found moves.
 
 4. Adding Move & GameMove & Change State
 5. Sending signal
+
+## Licensing
+
+The pentagame brand and board design is owned by [Jan Suchanek](https://pentagame.org) and available under [CC-BY-NC](https://creativecommons.org/licenses/by-nc/3.0/de/). For any inqueries reagrding this brand or the board design please refer to him. 
+
+The code and game implementation as well as architecture is licensed under [GPL v3.0-or-newer @ Cobalt](https://cobalt.rocks).
