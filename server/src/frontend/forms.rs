@@ -5,6 +5,7 @@ pub struct GameForm {
     pub name: String,
     pub public: Option<String>,
     pub description: Option<String>,
+    pub icon: Option<String>
 }
 
 #[derive(Deserialize)]

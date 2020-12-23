@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 use crate::api::errors::APIError;
 use crate::config::{DatabaseConfig, CONFIG};
 use crate::db::actions::{
@@ -6,6 +8,7 @@ use crate::db::actions::{
 use crate::frontend::routes::DbPool;
 use crate::graph::{graph::GraphState, graph::GRAPH, models::MOVE};
 use actix::prelude::*;
+use diesel::result::Error as DBError;
 use hashbrown::{HashMap, HashSet};
 use rand::{self, rngs::ThreadRng, Rng};
 use serde::{Deserialize, Serialize};
@@ -42,18 +45,8 @@ pub struct Message {
 
 // Message for game server communications
 
-/*
-Message for sending query to get users for current game
-WARNING: This isn't cached at the moment
-*/
 #[derive(Message)]
-#[rtype(result = "Result<Vec<(Uuid, String)>, APIError>")]
-pub struct QueryUsersMessage {
-    pub gid: i32,
-}
-
-#[derive(Message)]
-#[rtype(result = "Result<(String, String, i32), APIError>")]
+#[rtype(result = "Result<(String, String, i32, Vec<(Uuid, String)>), APIError>")]
 pub struct QueryGameMessage {
     pub gid: i32,
 }
@@ -96,8 +89,7 @@ pub struct ClientMessage {
     ---
     | action | description         | data                | host only |
     | ------ | ------------------- | ----------------    | --------- |
-    | 0      | get users           | {}                  |     X     |
-    | 1      | get game state      | {}                  |           |
+    | 1      | get game meta       | {}                  |     X     |
     | 2      | make move           | {"move": [MOVE]}    |     X     |
     | 3      | Place Stopper       | {"move": String}    |     X     |
     | 4      | leave game          | {}                  |     X     |
@@ -107,16 +99,6 @@ pub struct ClientMessage {
     pub action: u8,
     pub data: HashMap<String, String>,
     // Game id (this may be used to reference rooms more easyl)
-    pub game: i32,
-}
-
-// Join Game
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct Join {
-    // Client id
-    pub id: usize,
-    // Game id
     pub game: i32,
 }
 
@@ -189,14 +171,29 @@ impl Handler<Connect> for GameServer {
             }
         };
 
+        /*
+        rebuilding state
+        This should be cached (under normal circumstances) and not be too work
+        */
+        let state = match GraphState::build_from_db(&conn, gid) {
+            Ok(state) => state,
+            Err(_) => {
+                return Err(APIError::InternalError(
+                    "Unable to build graph state from database".to_owned(),
+                ));
+            }
+        };
+
         match self.games.get_mut(&gid) {
             Some(game) => {
                 game.insert(id);
+                self.states.insert(gid, state);
             }
             None => {
                 let mut new_game = HashSet::with_capacity(5);
                 new_game.insert(id);
                 self.games.insert(gid, new_game);
+                self.states.insert(gid, state);
             }
         }
 
@@ -236,26 +233,41 @@ impl Handler<MakeMoveMessage> for GameServer {
     type Result = Result<bool, APIError>;
 
     fn handle(&mut self, msg: MakeMoveMessage, _: &mut Context<Self>) -> Self::Result {
-        // get connections and build board
+        // get connections
         let conn = self.pool.get()?;
+        let dest = [msg.action.0[3], msg.action.0[4], msg.action.0[5]];
+
+        // fetch starting point (db is trusted source)
+        let db_friendly_figure: i16 = msg.action.1.into(); // SMALLINT requires i16
+        let src = match fetch_latest_move(&conn, msg.gid, msg.uid, db_friendly_figure) {
+            // take response and translate to array
+            Ok((action, _)) => {
+                let (last_src, last_dest) = action.split_at(2);
+                // ensure move isn't repetitive
+                if dest == last_dest {
+                    return Err(APIError::ValidationError(
+                        "This move is repetitive".to_owned(),
+                    ));
+                } else {
+                    last_src
+                        .try_into()
+                        .expect("Mov fetching returned corrupted results")
+                }
+            }
+            // no move was made. Fall back
+            Err(DBError::NotFound { .. }) => [db_friendly_figure, 0, 0],
+            Err(_) => {
+                eprintln!("Corrupted Database!!!!");
+                return Err(APIError::InternalError(
+                    "Potential Corrupted database!".to_owned(),
+                ));
+            }
+        };
+
+        // validate move
         let state = self.states.get(&msg.gid).unwrap();
         let mut graph = GRAPH.clone();
         graph.load_state(*state)?;
-
-        // fetch starting point (db is trusted source)
-        let src = match fetch_latest_move(&conn, msg.gid, msg.uid)? {
-            // take response and translate to array
-            Some(src) => [
-                *src.get(0).unwrap(),
-                *src.get(1).unwrap(),
-                *src.get(2).unwrap(),
-            ],
-            // no move was made. Fall back to
-            None => [msg.action.1.into(), 0, 0],
-        };
-        let dest = [msg.action.0[3], msg.action.0[4], msg.action.0[5]];
-
-        // validate move
         let result = graph.validate(&src, &dest)?;
 
         match result.0 {
@@ -265,15 +277,17 @@ impl Handler<MakeMoveMessage> for GameServer {
                     &conn,
                     msg.uid,
                     msg.gid,
-                    [
-                        *src.get(0).unwrap(),
-                        *src.get(1).unwrap(),
-                        *src.get(2).unwrap(),
-                        dest[0],
-                        dest[1],
-                        dest[2],
-                        result.1.into(),
-                    ],
+                    (
+                        [
+                            *src.get(0).unwrap(),
+                            *src.get(1).unwrap(),
+                            *src.get(2).unwrap(),
+                            dest[0],
+                            dest[1],
+                            dest[2],
+                        ],
+                        result.1,
+                    ),
                 )?;
                 // send message of move to all other players
 
@@ -286,28 +300,19 @@ impl Handler<MakeMoveMessage> for GameServer {
     }
 }
 
-// handler for user query message
-impl Handler<QueryUsersMessage> for GameServer {
-    type Result = Result<Vec<(Uuid, String)>, APIError>;
-
-    fn handle(&mut self, msg: QueryUsersMessage, _: &mut Context<Self>) -> Self::Result {
-        let conn = self.pool.get()?;
-
-        Ok(get_game_users(&conn, msg.gid)?)
-    }
-}
-
 // handler for game query message
 impl Handler<QueryGameMessage> for GameServer {
-    type Result = Result<(String, String, i32), APIError>;
+    type Result = Result<(String, String, i32, Vec<(Uuid, String)>), APIError>;
 
     fn handle(&mut self, msg: QueryGameMessage, _: &mut Context<Self>) -> Self::Result {
         let conn = self.pool.get()?;
 
         let game = get_slim_game(&conn, msg.gid)?;
+        let users = get_game_users(&conn, msg.gid)?;
+
         match game.1 {
-            Some(desc) => Ok((game.0, desc, game.2)),
-            None => Ok((game.0, "".to_owned(), game.2)),
+            Some(desc) => Ok((game.0, desc, game.2, users)),
+            None => Ok((game.0, "".to_owned(), game.2, users)),
         }
     }
 }
@@ -340,11 +345,12 @@ impl Handler<ClientMessage> for GameServer {
 
 // Join room, send disconnect message to old room
 // send join message to new room
+/*
 impl Handler<Join> for GameServer {
     type Result = ();
 
     fn handle(&mut self, msg: Join, _: &mut Context<Self>) {
-        let Join { id, game } = msg;
+        let Join { id, game } = msg; // I love this on-the-fly syntax
         let mut games = Vec::new();
 
         // remove session from all rooms
@@ -354,20 +360,25 @@ impl Handler<Join> for GameServer {
             }
         }
 
-        // send message to other users
-        let mut data = HashMap::with_capacity(1);
-        data.insert(String::from("user"), msg.id.to_string());
-        for game in games {
-            self.send_message(&game, 3_u8, data.clone(), 0);
-        }
-
+        // insert into internal game map
         self.games
             .entry(game)
             .or_insert_with(HashSet::new)
             .insert(id);
+
+        // ensure states are set
+        /*
+        match self.states.get(&game) {
+            Some(_) => (),
+            None => {
+                self.states.insert(game, GRAPH)
+            }
+        }
+        */
 
         let mut data = HashMap::with_capacity(1);
         data.insert("user".to_owned(), id.to_string());
         self.send_message(&msg.game, 0, data, id);
     }
 }
+**/

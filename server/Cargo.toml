@@ -4,14 +4,19 @@ version = "0.1.0"
 authors = ["Cobalt <Chaosthe0rie@protonmail.com>"]
 edition = "2018"
 
+
+# Yeet those release compile times
+[profile.release]
+lto = true
+linker = "lld"
+codegen-units = 1
+
+
 [dependencies]
 actix = "0.10"
 actix-identity = "0.3.1"
 actix-files = "0.4.0"
-actix-web = { version = "3", default-features = false, features = [
-    "compress",
-    "secure-cookies",
-] }
+actix-web = { version = "3", default-features = false, features = ["compress", "secure-cookies"] }
 actix-redis = "0.9.1"
 actix-web-actors = "3"
 askama = { version = "0.10", default-features = false, features = [
@@ -24,12 +29,7 @@ cached = "~0.20"
 chrono = "0.4.19"
 clap = "2.33.3"
 derive_more = "0.99.11"
-diesel = { version = "1.4.5", features = [
-    "postgres",
-    "r2d2",
-    "uuid",
-    "chrono"
-] }
+diesel = { version = "1.4.5", features = ["postgres", "r2d2", "uuid", "chrono"] }
 futures = "0.3.6"
 hashbrown = { version = "0.9.1", features = ["serde", "inline-more", "rayon"] }
 lazy_static = "1.4"

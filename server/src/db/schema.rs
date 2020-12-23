@@ -10,9 +10,11 @@ table! {
 table! {
     game_moves (id) {
         id -> Int4,
-        user_id -> Uuid,
         game_id -> Int4,
-        umove -> Array<Int2>,
+        src -> Array<Int2>,
+        dest -> Array<Int2>,
+        user_id -> Uuid,
+        figure -> Int2,
     }
 }
 
@@ -24,6 +26,7 @@ table! {
         user_id -> Uuid,
         state -> Int2,
         public -> Bool,
+        icon -> Text,
     }
 }
 

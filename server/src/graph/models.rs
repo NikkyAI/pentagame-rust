@@ -7,7 +7,6 @@ use serde_json::from_str;
 // types
 // i16 is used to be translatable to PG SMALL INT
 pub type MOVE = ([i16; 6], Figure);
-pub type AMOVE = [i16; 7]; // absolute move
 pub type FIELD = [i16; 3];
 pub type LOCATION = ([i16; 3], Figure);
 
@@ -53,10 +52,10 @@ impl Game {
 }
 
 impl Move {
-    pub fn from_action(action: HashMap<String, String>) -> Result<Move, APIError> {
-        let mut data: MOVE = ([0_i16; 6], u8::MAX);
+    pub fn from_action(data: HashMap<String, String>) -> Result<Move, APIError> {
+        let mut action: MOVE = ([0_i16; 6], u8::MAX);
 
-        data.1 = match action.get("figure") {
+        action.1 = match data.get("figure") {
             Some(raw_id) => match raw_id.parse::<u8>() {
                 Ok(id) => id,
                 Err(_) => {
@@ -70,7 +69,7 @@ impl Move {
             }
         };
 
-        data.0 = match action.get("move") {
+        action.0 = match data.get("move") {
             Some(raw_move) => match from_str::<[i16; 6]>(raw_move) {
                 Ok(parsed_move) => parsed_move,
                 Err(_) => {
@@ -84,6 +83,6 @@ impl Move {
             }
         };
 
-        Ok(Move { action: data })
+        Ok(Move { action })
     }
 }

@@ -23,7 +23,7 @@ serve:
 	./target/release/pentagame serve
 build:
 	cargo b --release
-	cd static/ && yarn && yarn run production-compile
+	cd static/ && npm i && npm run production-compile
 generate:
 	cargo b --release
 	./target/release/pentagame generate
@@ -32,7 +32,7 @@ dev-generate:
 	./target/debug/pentagame generate
 dev-build:
 	cargo b
-	cd static/ && yarn run compile
+	cd static/ && npm run compile
 ci-build:
 	cargo build --verbose
 ci-test:

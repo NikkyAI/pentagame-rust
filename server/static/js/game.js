@@ -124,12 +124,41 @@ class Game {
   }
 
   update_metadata(meta) {
-    // save meta
+    // save meta (includes users)
     this.meta = meta;
+
+    // update users
+    this.update_users(this.meta.players);
 
     // set state
     let state = document.getElementById("game-state");
-    state.innerHTML = meta.state;
+    /*
+    Evaluate State description
+    see server/db/model for mapping
+    */
+    meta.state = Number(meta.state);
+    if (meta.state == 0) {
+      state.innerHTML = "Game is not running";
+    } else if (meta.state < 6) {
+      state.innerHTML = `Waiting for move of player ${
+        this.meta.players[meta.state]
+      }`;
+    } else if (meta.state < 11) {
+      state.innerHTML = `Waiting for stopper placement of player ${
+        this.meta.players[meta.state]
+      }`;
+    } else if (meta.state != 11) {
+      let winners = "",
+        winner_amount = meta.state - 10;
+      for (let i = 0; i < winner_amount; i++) {
+        if (i + 2 == winner_amount) {
+          winners.concat(`${this.meta.players[i]} and `);
+        } else {
+          winners.concat(`${this.meta.players[i]}, `);
+        }
+      }
+      state.innerHTML = `Game won by ${winners} Congratulations!`;
+    }
 
     // set description
     let description = document.getElementById("game-description");
@@ -152,11 +181,6 @@ class Game {
   onmessage(event) {
     let data = JSON.parse(event.data);
     switch (data.action) {
-      case 0:
-        // comes as (Uuid, String)
-        this.reference.update_users(data.data);
-        break;
-
       case 1:
         this.reference.update_metadata(data.data);
         break;

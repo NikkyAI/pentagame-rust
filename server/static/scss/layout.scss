@@ -30,9 +30,9 @@ body {
   }
 }
 
-.input-name > input[type='text']:focus,
-.input-name > input[type='password']:focus,
-.input-name > input[type='number']:focus,
+.input-name > input[type="text"]:focus,
+.input-name > input[type="password"]:focus,
+.input-name > input[type="number"]:focus,
 .input-name > textarea:focus {
   border: none;
   outline: none;
@@ -49,9 +49,9 @@ body {
   background-color: $dark;
 }
 
-.input-name > input[type='text']:focus + .underline-animation,
-.input-name > input[type='password']:focus + .underline-animation,
-.input-name > input[type='number']:focus + .underline-animation,
+.input-name > input[type="text"]:focus + .underline-animation,
+.input-name > input[type="password"]:focus + .underline-animation,
+.input-name > input[type="number"]:focus + .underline-animation,
 .input-name > textarea:focus + .underline-animation {
   left: 0;
   max-width: 40rem;
@@ -70,15 +70,20 @@ body {
 
 input.id,
 textarea.id {
-  font-family: 'Font Awesome 5 Free', Arial, Helvetica, sans-serif;
+  font-family: "Font Awesome 5 Free", Arial, Helvetica, sans-serif;
   font-style: normal;
   font-weight: normal;
   text-decoration: inherit;
 }
 
 #penta {
-  min-height: 20rem;
+  // This is awfully mobile unfriendly but I need something working for now
+  max-height: 80vh;
   overflow: visible;
+}
+
+#game-container {
+  max-width: 100vh;
 }
 
 .fab {
@@ -95,11 +100,11 @@ textarea.id {
 }
 
 .fas-text {
-  font-family: 'Font Awesome 5 Free', Arial, Helvetica, sans-serif;
+  font-family: "Font Awesome 5 Free", Arial, Helvetica, sans-serif;
 }
 
 .fab-text {
-  font-family: 'Font Awesome 5 Brands', Arial, Helvetica, sans-serif;
+  font-family: "Font Awesome 5 Brands", Arial, Helvetica, sans-serif;
 }
 
 .fab-btn {

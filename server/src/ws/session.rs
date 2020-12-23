@@ -1,6 +1,4 @@
-use super::actor::{
-    Connect, Disconnect, GameServer, MakeMoveMessage, Message, QueryGameMessage, QueryUsersMessage,
-};
+use super::actor::{Connect, Disconnect, GameServer, MakeMoveMessage, Message, QueryGameMessage};
 use super::errors::{MESSAGE_FORMAT_ERROR, UNIMPLEMENTED_ERROR};
 use crate::db::model::SlimUser;
 use crate::graph::models::Move;
@@ -10,6 +8,7 @@ use hashbrown::HashMap;
 use serde::Serialize;
 use serde_json::to_string;
 use std::time::{Duration, Instant};
+use uuid::Uuid;
 
 // How often heartbeat pings are sent
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
@@ -17,10 +16,17 @@ const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Serialize, Clone, Debug)]
-struct ServerMessage {
+struct ServerMessage<D> {
     pub action: u8,
-    pub data: HashMap<String, String>,
+    pub data: D,
 }
+
+#[derive(Serialize, Clone, Debug)]
+struct SimpleServerMessage<'a> {
+    pub action: u8,
+    pub data: HashMap<&'a str, String>,
+}
+
 
 #[derive(Serialize, Clone, Debug)]
 struct ServerListMessage<T> {
@@ -28,6 +34,16 @@ struct ServerListMessage<T> {
     pub data: Vec<T>,
 }
 
+// response specific structs
+#[derive(Serialize)]
+pub struct QueryGameResponse {
+    name: String,
+    description: String,
+    state: i32,
+    players: Vec<(Uuid, String)>,
+}
+
+// Session specific struct
 pub struct WsGameSession {
     // unique session id (== user id)
     pub id: usize,
@@ -116,46 +132,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsGameSession {
                     Ok(action) => {
                         // see action mapping in actors::ClientMessage
                         match action.action {
-                            0 => {
-                                self.addr.send(QueryUsersMessage { gid: self.game })
-                            .into_actor(self)
-                            .then(|res, _, ctx| {
-                                let _ = match res {
-                                     Ok(result) => {
-                                        let users = match result {
-                                                Ok(users) => users,
-                                                Err(_) => {
-                                                    ctx.stop();
-                                                    return fut::ready(());
-                                                }
-                                        };
-                                        let message = ServerListMessage {
-                                            action: 0,
-                                            data: users
-                                        };
-
-                                        let data = match serde_json::to_string(&message) {
-                                                Ok(data) => data,
-                                                Err(_) => {
-                                                    ctx.stop();
-                                                    return fut::ready(());
-                                                }
-                                        };
-
-                                        ctx.text(data);
-
-                                    }
-                                    // something is wrong with game server
-                                    Err(why) => {
-                                        eprintln!("The gamserver crashed or game was closed: {:?}", why);
-                                        ctx.stop()
-                                    }
-                                };
-                                fut::ready(())
-
-                            })
-                            .wait(ctx);
-                            }
                             1 => {
                                 self.addr.send(QueryGameMessage { gid: self.game })
                             .into_actor(self)
@@ -163,7 +139,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsGameSession {
                             .then(|res, _, ctx| {
                                 let _ = match res {
                                      Ok(result) => {
-                                        let (name, description, status) = match result {
+                                        let (name, description, state, players) = match result {
                                                 Ok(users) => users,
                                                 Err(_) => {
                                                     ctx.stop();
@@ -171,13 +147,13 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsGameSession {
                                                 }
                                         };
 
-                                        let mut data = HashMap::with_capacity(3);
-                                        data.insert("name".to_owned(), name);
-                                        data.insert("description".to_owned(), description);
-                                        data.insert("status".to_owned(), status.to_string());
+                                        
+
                                         let message = ServerMessage {
                                             action: 1,
-                                             data
+                                            data: QueryGameResponse {
+                                                name, description, state, players
+                                            }
                                         };
 
                                         let data = match serde_json::to_string(&message) {

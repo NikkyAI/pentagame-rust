@@ -1,34 +1,57 @@
 {% extends "base.html" %} {% block content %}
 
-<form class="p-1 d-flex justify-content-center my-2 mx-auto" method="POST">
-  <div class="card card0 p-4 rounded">
-    <div class="row flex-grow justify-content-center my-auto">
-      <div class="col w-100 m-5">
-        <h1 class="mb-5 text-center heading title">Register</h1>
-        {% if alert != "" %}
-        <div class="alert alert-success" role="alert">
-          {{ alert }}
-          <button
-            type="button"
-            class="close"
-            data-dismiss="alert"
-            aria-label="Close"
-          >
-            <i class="fas times-icon"></i>
-          </button>
-        </div>
-        {% endif %}
-        <div class="form-group">
-          <div class="input-name mb-3">
+<div class="container h-100 py-4">
+  <form class="p-1 d-flex justify-content-center my-2 mx-auto" method="POST">
+    <div class="card card0 p-4 rounded">
+      <div class="row flex-grow justify-content-center my-auto">
+        <div class="col w-100 m-5">
+          <h1 class="mb-5 text-center heading title">Register</h1>
+          {% if alert != "" %}
+          <div class="alert alert-success" role="alert">
+            {{ alert }}
+            <button
+              type="button"
+              class="close"
+              data-dismiss="alert"
+              aria-label="Close"
+            >
+              <i class="fas times-icon"></i>
+            </button>
+          </div>
+          {% endif %}
+          <div class="form-group">
+            <div class="input-name mb-3">
+              <input
+                type="text"
+                name="username"
+                id="username"
+                value="{{ username }}"
+                placeholder=" Username"
+                aria-placeholder="Your username"
+                autocomplete="new-username"
+                class="form-control id {% if username_error %}is-invalid{% endif %}"
+              />
+              <span
+                class="underline-animation"
+                style="max-width: 40rem !important"
+              ></span>
+              <div class="valid-feedback">Looks good!</div>
+              <div class="invalid-feedback">
+                Your username must be longer than 1 and shorter than 40 chars.
+                Only ASCII allowed
+              </div>
+            </div>
+          </div>
+          <div class="input-name form-group">
             <input
-              type="text"
-              name="username"
-              id="username"
-              value="{{ username }}"
-              placeholder=" Username"
-              aria-placeholder="Your username"
-              autocomplete="new-username"
-              class="form-control id {% if username_error %}is-invalid{% endif %}"
+              type="password"
+              name="password"
+              id="password"
+              value="{{ password }}"
+              placeholder=" Password"
+              aria-placeholder="Your password"
+              autocomplete="new-password"
+              class="form-control id {% if password_error %}is-invalid{% endif %}"
             />
             <span
               class="underline-animation"
@@ -36,65 +59,44 @@
             ></span>
             <div class="valid-feedback">Looks good!</div>
             <div class="invalid-feedback">
-              Your username must be longer than 1 and shorter than 40 chars.
-              Only ASCII allowed
+              Your password must be longer than 6 chars and must consist of at
+              least one uppercase, one lowercase and one number
             </div>
           </div>
-        </div>
-        <div class="input-name form-group">
-          <input
-            type="password"
-            name="password"
-            id="password"
-            value="{{ password }}"
-            placeholder=" Password"
-            aria-placeholder="Your password"
-            autocomplete="new-password"
-            class="form-control id {% if password_error %}is-invalid{% endif %}"
-          />
-          <span
-            class="underline-animation"
-            style="max-width: 40rem !important"
-          ></span>
-          <div class="valid-feedback">Looks good!</div>
-          <div class="invalid-feedback">
-            Your password must be longer than 6 chars and must consist of at
-            least one uppercase, one lowercase and one number
-          </div>
-        </div>
 
-        <div class="my-2 form-group">
-          <div class="form-check">
-            <input
-              class="form-check-input {% if cookie_error %}is-invalid{% endif %}"
-              type="checkbox"
-              name="cookies"
-              value="on"
-              unchecked
-            />
-            <label class="form-check-label" for="cookies">
-              Allow Authentication Cookies.
-              <a href="/content/cookies" class="text-dark">Learn More</a>
-            </label>
-            <div class="invalid-feedback">
-              You must agree before submitting.
+          <div class="my-2 form-group">
+            <div class="form-check">
+              <input
+                class="form-check-input {% if cookie_error %}is-invalid{% endif %}"
+                type="checkbox"
+                name="cookies"
+                value="on"
+                unchecked
+              />
+              <label class="form-check-label" for="cookies">
+                Allow Authentication Cookies.
+                <a href="/content/cookies" class="text-dark">Learn More</a>
+              </label>
+              <div class="invalid-feedback">
+                You must agree before submitting.
+              </div>
             </div>
           </div>
-        </div>
-        <div class="row justify-content-center my-3 px-3">
-          <button class="btn-block btn btn-outline-dark">Register</button>
+          <div class="row justify-content-center my-3 px-3">
+            <button class="btn-block btn btn-outline-dark">Register</button>
+          </div>
         </div>
       </div>
+      <div class="bottom text-center mb-5">
+        <a href="/users/login" class="text-sm text-dark mx-auto mb-3">
+          Already have an account?
+          <button type="button" class="btn btn-outline-dark btn-sm ml-2">
+            Login now
+          </button>
+        </a>
+      </div>
     </div>
-    <div class="bottom text-center mb-5">
-      <a href="/users/login" class="text-sm text-dark mx-auto mb-3">
-        Already have an account?
-        <button type="button" class="btn btn-outline-dark btn-sm ml-2">
-          Login now
-        </button>
-      </a>
-    </div>
-  </div>
-</form>
+  </form>
+</div>
 
 {% endblock %} {% block title %}Register{% endblock %}

@@ -1,125 +1,129 @@
 {% extends "base.html" %} {% block content %}
-<div class="container">
-  <h1 class="title mb-3">Settings</h1>
 
-  <form class="container mb-4" action="/users/settings" method="POST">
-    <h2 class="title mb-3">Username</h2>
-    <p>
-      Your username is limited to 1 - 40 chars and may only contain ascii
-      characters
-    </p>
+<div class="container h-100 py-4">
+  <div class="container">
+    <h1 class="title mb-3">Settings</h1>
 
-    <div class="input-name mb-3">
-      <input
-        type="text"
-        name="username"
-        placeholder=" Username"
-        id="username"
-        class="form-control id {% if username_error %}is-invalid{% endif %}"
-        value="{{ user.username }}"
-      />
-      <span class="underline-animation"></span>
-      <div class="invalid-feedback">
-        Username too long (>40 letters) or already in use!
+    <form class="container mb-4" action="/users/settings" method="POST">
+      <h2 class="title mb-3">Username</h2>
+      <p>
+        Your username is limited to 1 - 40 chars and may only contain ascii
+        characters
+      </p>
+
+      <div class="input-name mb-3">
+        <input
+          type="text"
+          name="username"
+          placeholder=" Username"
+          id="username"
+          class="form-control id {% if username_error %}is-invalid{% endif %}"
+          value="{{ user.username }}"
+        />
+        <span class="underline-animation"></span>
+        <div class="invalid-feedback">
+          Username too long (>40 letters) or already in use!
+        </div>
       </div>
-    </div>
 
-    <button class="btn btn-dark" type="submit">
-      Update Username <i class="fas fa-arrow-circle-right"></i>
-    </button>
-  </form>
+      <button class="btn btn-dark" type="submit">
+        Update Username <i class="fas fa-arrow-circle-right"></i>
+      </button>
+    </form>
 
-  <form class="mb-3 container" actions="/users/settings" method="POST">
-    <h2 class="title mb-3">Password</h2>
-    <p>
-      Your password should consist of at least one uppercase and one lowercase
-      letter as well as a number but should only use ascii characters. Your
-      password also must be longer than 6 chars.
-    </p>
+    <form class="mb-3 container" actions="/users/settings" method="POST">
+      <h2 class="title mb-3">Password</h2>
+      <p>
+        Your password should consist of at least one uppercase and one lowercase
+        letter as well as a number but should only use ascii characters. Your
+        password also must be longer than 6 chars.
+      </p>
 
-    <div class="input-name mb-3">
-      <input
-        type="password"
-        id="old_password"
-        name="old_password"
-        value=""
-        autocomplete="current-password"
-        placeholder=" Current Password"
-        aria-placeholder="Current password of your user account"
-        class="form-control"
-      />
-      <span class="underline-animation"></span>
-      <div class="invalid-feedback">Your passwor d</div>
-    </div>
+      <div class="input-name mb-3">
+        <input
+          type="password"
+          id="old_password"
+          name="old_password"
+          value=""
+          autocomplete="current-password"
+          placeholder=" Current Password"
+          aria-placeholder="Current password of your user account"
+          class="form-control"
+        />
+        <span class="underline-animation"></span>
+        <div class="invalid-feedback">Your passwor d</div>
+      </div>
 
-    <div class="input-name mb-3">
-      <input
-        type="password"
-        id="new-password"
-        autocomplete="password"
-        name="password"
-        value=""
-        placeholder=" New Password"
-        aria-placeholder="New Password for your user account"
-        class="form-control id"
-      />
-      <span class="underline-animation"></span>
-    </div>
+      <div class="input-name mb-3">
+        <input
+          type="password"
+          id="new-password"
+          autocomplete="password"
+          name="password"
+          value=""
+          placeholder=" New Password"
+          aria-placeholder="New Password for your user account"
+          class="form-control id"
+        />
+        <span class="underline-animation"></span>
+      </div>
 
-    <button class="btn btn-dark" type="submit">
-      Update Password <i class="fas fa-arrow-circle-right"></i>
-    </button>
-  </form>
+      <button class="btn btn-dark" type="submit">
+        Update Password <i class="fas fa-arrow-circle-right"></i>
+      </button>
+    </form>
 
-  <form class="mb-3 container" action="/users/settings" method="POST">
-    <h2 class="title mb-3">Status</h2>
-    <p>
-      With your status you can tell other people how you feel, what you're doing
-      or what you're up to at the moment.
-    </p>
+    <form class="mb-3 container" action="/users/settings" method="POST">
+      <h2 class="title mb-3">Status</h2>
+      <p>
+        With your status you can tell other people how you feel, what you're
+        doing or what you're up to at the moment.
+      </p>
 
-    <div class="input-name mb-3">
-      <textarea
-        class="form-control id"
-        id="status"
-        name="status"
-        rows="4"
-        placeholder=" Your status"
-      >
-      {{ user.status }}
-      </textarea>
-      <span class="underline-animation"></span>
-    </div>
-
-    <button class="btn btn-dark" type="submit">
-      Update Status <i class="fas fa-arrow-circle-right"></i>
-    </button>
-  </form>
-
-  <div class="container mt-4 d-flex justify-content-center mb-3">
-    <div class="card bg-danger flex-shrink-1">
-      <div class="card-header text-white text-center">Dangerous Section</div>
-
-      <div class="card-body">
-        <div
-          class="btn-group"
-          role="group"
-          aria-label="Dangerous Section button group"
+      <div class="input-name mb-3">
+        <textarea
+          class="form-control id"
+          id="status"
+          name="status"
+          rows="4"
+          placeholder=" Your status"
         >
-          <button
-            type="button"
-            class="btn btn-outline-light"
-            id="delete-account"
+      {{ user.status }}
+      </textarea
+        >
+        <span class="underline-animation"></span>
+      </div>
+
+      <button class="btn btn-dark" type="submit">
+        Update Status <i class="fas fa-arrow-circle-right"></i>
+      </button>
+    </form>
+
+    <div class="container mt-4 d-flex justify-content-center mb-3">
+      <div class="card bg-danger flex-shrink-1">
+        <div class="card-header text-white text-center">Dangerous Section</div>
+
+        <div class="card-body">
+          <div
+            class="btn-group"
+            role="group"
+            aria-label="Dangerous Section button group"
           >
-            Delete Account
-          </button>
-          <button
-            type="button"
-            class="btn btn-outline-light"
-            id="archive-account"
-          >
-            Archive Account
-          </button>
+            <button
+              type="button"
+              class="btn btn-outline-light"
+              id="delete-account"
+            >
+              Delete Account
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-light"
+              id="archive-account"
+            >
+              Archive Account
+            </button>
+          </div>
         </div>
       </div>
     </div>

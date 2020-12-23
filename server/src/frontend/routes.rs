@@ -189,6 +189,9 @@ pub async fn post_create_game(
     id: Option<SlimUser>,
     pool: Data<DbPool>,
 ) -> UserResponse {
+    // constants for validation
+    use crate::db::model::{DEFAULT_ICON, ICONS};
+
     // retrieve id and guard route
     let user = guard_with_user(id.clone())?;
     let conn = pool.get()?;
@@ -199,6 +202,18 @@ pub async fn post_create_game(
         None => true,
     };
 
+    let icon = match &data.icon {
+        Some(icon) => {
+            if ICONS.contains(&icon.as_str()) {
+                icon
+            } else {
+                DEFAULT_ICON
+            }
+        }
+        None => DEFAULT_ICON,
+    }
+    .to_owned();
+
     // freeing thread because diesel doesn't support async net
     let gid = block(move || {
         create_game(
@@ -206,6 +221,7 @@ pub async fn post_create_game(
             data.name.clone(),
             data.description.clone(),
             public,
+            icon,
             &user,
         )
     })
@@ -525,9 +541,10 @@ pub async fn post_settings_user(
                 };
 
                 match get_user_by_username(&conn, sacrifice_new_username.clone())? {
-                    Some(u) => {
-                        Err(UserError::ValidationError(format!("Username {} in use", u.username)))
-                    }
+                    Some(u) => Err(UserError::ValidationError(format!(
+                        "Username {} in use",
+                        u.username
+                    ))),
                     None => {
                         update(users.filter(id.eq(&sacrifice_id)))
                             .set(username.eq(zero_trim(&sacrifice_new_username)))

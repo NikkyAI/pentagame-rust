@@ -1,70 +1,89 @@
 {% extends "base.html" %} {% block title %} Creating Game {% endblock %} {%
 block content %}
 
-<form method="POST">
-  <!-- Name input -->
-  <div class="form-group">
+<div class="container h-100 py-4">
+  <form method="POST">
+    <!-- Name input -->
+    <div class="form-group">
+      <div class="input-name mb-3">
+        <input
+          type="text"
+          name="name"
+          id="name"
+          value="{{ name }}"
+          placeholder=" Name"
+          aria-placeholder="Game Name"
+          class="form-control id {% if name_error %}is-invalid{% endif %}"
+        />
+        <span
+          class="underline-animation"
+          style="max-width: 40rem !important"
+        ></span>
+      </div>
+    </div>
+    <div class="form-group d-flex mb-3 gx-2 align-items-center">
+      <select
+        class="form-select"
+        id="icon"
+        style="max-width: 10rem"
+        name="icon"
+        aria-label="Select for game icon"
+      >
+        {# Unfortunately icons don't work as expected for options in firefox.
+        See
+        https://stackoverflow.com/questions/36743041/font-awesome-icon-in-select-option
+        #}
+        <option value="fa-hat-wizard" selected>Wizard</option>
+        <option value="fa-hand-lizard">Hand Lizard</option>
+        <option value="fa-chess-pawn">Chess Pawn</option>
+        <option value="fa-chess-queen">Chess Queen</option>
+        <option value="fa-chess-rook">Chess Rook</option>
+        <option value="fa-torii-gate">Torii Gate</option>
+      </select>
+      <div class="ml-2 h6">Icon</div>
+    </div>
+
+    <!-- Public checkbox -->
+    <div class="form-outline border-dark mb-4">
+      <div
+        class="form-check"
+        data-toggle="tooltip"
+        title="Other players can join freely"
+      >
+        <input
+          class="form-check-input"
+          type="checkbox"
+          value="on"
+          data-placement="right"
+          id="public"
+          name="public"
+          checked
+        />
+        <label class="form-check-label" for="public"> Make public </label>
+      </div>
+    </div>
+
+    <!-- Description input -->
+    <p>
+      Your description should contain information about e.g. the background of
+      your game.
+    </p>
+
     <div class="input-name mb-3">
-      <input
-        type="text"
-        name="name"
-        id="name"
-        value="{{ name }}"
-        placeholder=" Name"
-        aria-placeholder="Game Name"
-        class="form-control id {% if name_error %}is-invalid{% endif %}"
-      />
-      <span
-        class="underline-animation"
-        style="max-width: 40rem !important;"
-      ></span>
+      <textarea
+        class="form-control id {% if description_error %}is-invalid{% endif %}"
+        id="description"
+        placeholder=" Game description"
+        name="description"
+        value="{{ description }}"
+        rows="4"
+      ></textarea>
+      <span class="underline-animation"></span>
     </div>
-  </div>
 
-  <!-- Public checkbox -->
-  <div class="form-outline border-dark mb-4">
-    <div
-      class="form-check"
-      data-toggle="tooltip"
-      title="Other players can join freely"
-    >
-      <input
-        class="form-check-input"
-        type="checkbox"
-        value="on"
-        data-placement="right"
-        id="public"
-        name="public"
-        checked
-      />
-      <label class="form-check-label" for="public">
-        Make public
-      </label>
-    </div>
-  </div>
-
-  <!-- Description input -->
-  <p>
-    Your description should contain information about e.g. the background of
-    your game.
-  </p>
-
-  <div class="input-name mb-3">
-    <textarea
-      class="form-control id {% if description_error %}is-invalid{% endif %}"
-      id="description"
-      placeholder=" Game description"
-      name="description"
-      value="{{ description }}"
-      rows="4"
-    ></textarea>
-    <span class="underline-animation"></span>
-  </div>
-
-  <!-- Submit button -->
-  <button type="submit" class="btn btn-outline-dark">
-    Create
-  </button>
-</form>
+    <!-- Submit button -->
+    <button type="submit" class="btn btn-outline-dark">Create</button>
+  </form>
+</div>
 
 {% endblock %}

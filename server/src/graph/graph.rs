@@ -1,17 +1,20 @@
 // hash implmentations
 use super::errors::GraphErr;
 use super::models::{FIELD, LOCATION};
+use diesel::PgConnection;
 use hashbrown::{HashMap, HashSet};
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
+use std::convert::TryInto;
 use std::fmt::Debug;
 
 // Figures are simplified based on denomination Rules
 pub type Figure = u8;
-// State containing Positzions of all figures (5 figures per player, 5 gray stoppers, 5 black stoppers)
+// State containing Positions of all figures (5 figures per player, 5 gray stoppers, 5 black stoppers)
 // LOCATION: ([i16; 3], u8)
-pub type GraphState = [LOCATION; 35];
+
+#[derive(Debug, Clone, Copy)]
+pub struct GraphState([LOCATION; 35]);
 
 // vertexmap
 pub const BASE_VERTEX_MAP: [i16; 10] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]; // in case the naming changes these are statically mapped
@@ -40,6 +43,7 @@ pub struct Edge {
     fid: FIELD,
 }
 
+// TODO: Change to using pointers for edges
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Graph {
     /// Mapping of vertex ids and vertex values
@@ -50,12 +54,6 @@ pub struct Graph {
 
     // set for edges (doesn't require any weights)
     pub edges: HashMap<FIELD, Vec<FIELD>>,
-}
-
-impl Field {
-    pub fn new(occupied: bool, owner: Option<Figure>) -> Field {
-        Field { occupied, owner }
-    }
 }
 
 impl Graph {
@@ -90,28 +88,26 @@ impl Graph {
     */
 
     pub fn add_edge(&mut self, fid: FIELD, sid: FIELD) -> Result<(), GraphErr> {
-        // get existing vertex from edgemap
-        let old = match self.edges.get_mut(&fid) {
+        match self.edges.get_mut(&fid) {
             Some(vertex) => {
                 vertex.push(sid);
-                vertex.to_owned()
+                Ok(())
             }
-            None => {
-                let sids = vec![sid];
-                sids.to_owned()
-            }
-        };
-
-        // add new edge and update edgemap
-        match self.edges.insert(fid, old) {
-            Some(_) => Err(GraphErr::CannotAddEdge {}),
-            None => Ok(()),
+            None => match self.edges.insert(fid, vec![sid]) {
+                // This shouldn't return anything -> Some(..) => Error
+                Some(_) => Err(GraphErr::CannotAddEdge {}),
+                None => Ok(()),
+            },
         }
     }
 
     pub fn add_vertex(&mut self, id: FIELD, field: Field) -> Result<FIELD, GraphErr> {
         match self.vertices.insert(id, field) {
-            Some(_) => Err(GraphErr::CannotAddVertex {}),
+            Some(value) => {
+                // insert the old vertex again to prevent UB
+                self.vertices.insert(id, value);
+                Err(GraphErr::CannotAddVertex {})
+            }
             None => Ok(id),
         }
     }
@@ -136,8 +132,8 @@ impl Graph {
         let v = self.vertices.len();
         /*
         Add this if you want to use this with more information
-        I may move to logic to an indepent crate and this will be included in a
-        seprate method
+        I may move to logic to an independent crate and this will be included in a
+        separate method
         let mut predecessor: HashMap<FIELD, Vec<FIELD>> = HashMap::with_capacity(v);
         let mut distances: HashMap<FIELD, u16> = HashMap::with_capacity(v);
         */
@@ -187,7 +183,8 @@ impl Graph {
     }
 
     pub fn load_state(&mut self, state: GraphState) -> Result<(), GraphErr> {
-        state.iter().for_each(|figure| {
+        // TODO: Parallelize this someday
+        state.0.iter().for_each(|figure| {
             self.figures_locations.insert(
                 Field {
                     occupied: true,
@@ -200,6 +197,8 @@ impl Graph {
         Ok(())
     }
 
+    /*
+    Kept for extendability
     pub fn dump_state(&self) -> Vec<LOCATION> {
         self.figures_locations
             .clone()
@@ -207,6 +206,7 @@ impl Graph {
             .map(|(field, location)| (location, field.owner.unwrap_or(u8::MAX)))
             .collect()
     }
+    */
 
     pub fn construct_graph() -> Result<Graph, GraphErr> {
         let mut graph: Graph = Graph::new();
@@ -214,32 +214,41 @@ impl Graph {
 
         // the base nodes (junction, corners) need to be preinserted to do effective EDGE and stop mapping
         for i in 0..BASE_VERTEX_MAP.len() {
-            base_map[i] = graph.add_vertex([BASE_VERTEX_MAP[i], 0, 0], Field::new(false, None))?;
+            base_map[i] = graph.add_vertex(
+                [BASE_VERTEX_MAP[i], 0, 0],
+                Field {
+                    occupied: false,
+                    owner: None,
+                },
+            )?;
         }
-
-        println!("Vertices: {:?}", graph.vertices);
-        println!("base_map: {:?}", base_map);
 
         // construct edges from edgemap. See pentagraph (python)
         for index in 0..EDGE_MAP.len() {
             let base_vertex = BASE_VERTEX_MAP[index];
             let f_id = base_map[index];
             for (svertex, vcounter) in EDGE_MAP[index] {
-                let mut s_id =
-                    graph.add_vertex([base_vertex, 1, *svertex], Field::new(false, None))?;
-
-                println!("Getting node {:?}: {:?}", s_id, graph.fetch(s_id)?);
+                let mut s_id = graph.add_vertex(
+                    [base_vertex, 1, *svertex],
+                    Field {
+                        occupied: false,
+                        owner: None,
+                    },
+                )?;
 
                 let mut t_id = s_id; // This value is just to prevent warnings
-                println!("Adding Edge between edge points");
-                println!("Fid: {:?} Sid: {:?}", f_id, s_id);
+
                 graph.add_edge(f_id, s_id)?;
                 for count in 2..vcounter + 1 {
-                    t_id = graph
-                        .add_vertex([base_vertex, count, *svertex], Field::new(false, None))?;
-                    println!("Tid: {:?} Sid: {:?}", t_id, s_id);
+                    t_id = graph.add_vertex(
+                        [base_vertex, count, *svertex],
+                        Field {
+                            occupied: false,
+                            owner: None,
+                        },
+                    )?;
+
                     graph.add_edge(t_id, s_id)?;
-                    println!("Adding Edgee between cross points");
                     graph.add_edge(s_id, t_id)?;
 
                     s_id = t_id;
@@ -248,12 +257,85 @@ impl Graph {
             }
         }
 
+        // ensure only required space is used
         graph.shrink_to_fit();
 
         return Ok(graph);
     }
 }
 
+impl GraphState {
+    // Creates an empty, as in no changes to the board but all player figures on board, state
+    pub fn empty() -> Result<GraphState, GraphErr> {
+        /*
+        This 'construction' is not optimized to allow for better understandability
+        It doesn't really matter anyway since it's saved in a lazy constant
+        */
+        let mut figures: [LOCATION; 35] = [([0_i16; 3], 0_u8); 35];
+
+        // adding players
+        (5..9).into_iter().for_each(|index| {
+            figures[index - 5] = ([index.try_into().unwrap(), 0, 0], index.try_into().unwrap());
+        });
+
+        println!("{:?}", figures);
+
+        Ok(GraphState(figures))
+    }
+
+    // assemble GraphState from GameMoves. May return EMPTY_GRAPH when no GameMoves where done
+    pub fn build_from_db(conn: &PgConnection, gid: i32) -> Result<GraphState, GraphErr> {
+        // WARNING: Work in progress
+        use crate::db::model::GameMove;
+        use crate::db::schema::game_moves::{self, dsl::*};
+        use diesel::prelude::*;
+
+        let mut new_state: GraphState = EMPTY_STATE.clone();
+        let mut base_data: Vec<GameMove> = match game_moves
+            .select(game_moves::all_columns)
+            .filter(game_id.eq(gid))
+            .order_by(id.desc())
+            .limit(25)
+            .load::<GameMove>(conn)
+        {
+            Ok(data) => data,
+            Err(why) => {
+                eprintln!("GraphErr: {}", why);
+                return Err(GraphErr::CannotConstructState("DB Query faulty".to_owned()));
+            }
+        };
+
+        println!("First: {:?}", new_state.0);
+
+        base_data.into_iter().enumerate().for_each(|(index, item)| {
+            // copy vector content into new array
+            let mut new_dest: [i16; 3] = [0; 3];
+            for y in 0..3 {
+                new_dest[y] = item.dest[y];
+            }
+
+            // create new figure state
+            println!("New State {} = {:?}", index, new_state.0[index]);
+
+            new_state.0[index] = (
+                new_dest,
+                item.figure
+                    .try_into()
+                    .expect("Corrupted database entry for figure"),
+            );
+
+            println!("New State {} = {:?}", index, new_state.0[index]);
+        });
+
+        println!("Second: {:?}", new_state.0);
+
+        return Ok(new_state);
+    }
+}
+
+// There's no need to construct the graph multiple times because it loads itself from a state
 lazy_static! {
+    pub static ref EMPTY_STATE: GraphState =
+        GraphState::empty().expect("Failed to build empty graph state");
     pub static ref GRAPH: Graph = Graph::construct_graph().expect("Failed to build empty graph");
 }

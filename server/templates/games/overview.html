@@ -1,69 +1,71 @@
 {% extends "base.html" %} {% block title %} Overview {% endblock %} {% block
 content %} {% let amount = games.len() %}
 
-<div class="row">
-  <div class="col-md-3 py-2 text-center">
-    <h2>Open Games</h2>
-    {% if amount == 0 %}
-    <a href="/games/create" class="btn w-80 btn-outline-dark">
-      Be the first to start a game
-    </a>
-    {% else %}
-
-    <form class="w-80" onSubmit="return joinGame();">
-      <div class="input-group mb-2">
-        <input
-          type="text"
-          id="game-id"
-          name="game-id"
-          placeholder="GAME ID"
-          class="form-control"
-          aria-label="Game ID for joining games directly"
-          aria-describedby="button-addon2"
-        />
-        <button
-          class="btn btn-outline-dark"
-          type="button"
-          id="button-addon2"
-          data-ripple-color="dark"
-          onclick=""
-        >
-          Join Game
-        </button>
-      </div>
-    </form>
-
-    <ul class="list-group border-1 border-dark list-group-flush">
-      {% for game in games %}
-      <a href="/games/join/{{ game.0 }}" class="list-group-item dark-link">
-        {{ game.1|trim }} <span class="text-darker">#{{ game.0 }}</span>
+<div class="container h-100 py-4">
+  <div class="row">
+    <div class="col-md-3 py-2 text-center">
+      <h2>Open Games</h2>
+      {% if amount == 0 %}
+      <a href="/games/create" class="btn w-80 btn-outline-dark">
+        Be the first to start a game
       </a>
-      {% endfor %} {% if amount == 5 %}
-      <a href="/games/browse/1" class="list-group-item dark-link">
-        See more
-        <br />
-        <i class="fas fa-chevron-down"></i>
-      </a>
-      {% endif %}
-    </ul>
-    {% endif %}
-  </div>
-  <div class="col-md-9">
-    <div class="card bg-dark">
-      <div class="row">
-        <div class="col-md-4">
-          <img
-            src="/static/images/brand.png"
-            class="img-fluid shdaow-0"
-            alt="Pentagame logo"
+      {% else %}
+
+      <form class="w-80" onSubmit="return joinGame();">
+        <div class="input-group mb-2">
+          <input
+            type="text"
+            id="game-id"
+            name="game-id"
+            placeholder="GAME ID"
+            class="form-control"
+            aria-label="Game ID for joining games directly"
+            aria-describedby="button-addon2"
           />
+          <button
+            class="btn btn-outline-dark"
+            type="button"
+            id="button-addon2"
+            data-ripple-color="dark"
+            onclick=""
+          >
+            Join Game
+          </button>
         </div>
-        <div class="col-md-8 py-2">
-          <p class="card-text text-white">
-            A Game require at least two players. Please be nice to each other.
-            Your game may have a name and a description. After creating a new
-            game oyu can also receive an ID to let your friends join directly.
-          </p>
+      </form>
+
+      <ul class="list-group border-1 border-dark list-group-flush">
+        {% for game in games %}
+        <a href="/games/join/{{ game.0 }}" class="list-group-item dark-link">
+          {{ game.1|trim }} <span class="text-darker">#{{ game.0 }}</span>
+        </a>
+        {% endfor %} {% if amount == 5 %}
+        <a href="/games/browse/1" class="list-group-item dark-link">
+          See more
+          <br />
+          <i class="fas fa-chevron-down"></i>
+        </a>
+        {% endif %}
+      </ul>
+      {% endif %}
+    </div>
+    <div class="col-md-9">
+      <div class="card bg-dark">
+        <div class="row">
+          <div class="col-md-4">
+            <img
+              src="/static/images/brand.png"
+              class="img-fluid shdaow-0"
+              alt="Pentagame logo"
+            />
+          </div>
+          <div class="col-md-8 py-2">
+            <p class="card-text text-white">
+              A Game require at least two players. Please be nice to each other.
+              Your game may have a name and a description. After creating a new
+              game oyu can also receive an ID to let your friends join directly.
+            </p>
+          </div>
         </div>
       </div>
     </div>

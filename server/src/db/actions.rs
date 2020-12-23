@@ -3,13 +3,14 @@ use super::helper::zero_trim;
 use super::model::{Game, NewGame, NewGameMove, NewUserGame, SlimUser, User, UserGame};
 use super::schema::users;
 use crate::auth::generate_hash;
-use crate::graph::models::AMOVE;
+use crate::graph::models::MOVE;
 use cached::{proc_macro::cached, stores::TimedCache};
 use chrono::offset::Local;
 use diesel::{
     delete, insert_into, result::Error, BelongingToDsl, ExpressionMethods, JoinOnDsl,
     OptionalExtension, PgConnection, QueryDsl, RunQueryDsl,
 };
+use std::convert::TryInto;
 use uuid::Uuid;
 
 pub fn create_game(
@@ -17,9 +18,11 @@ pub fn create_game(
     name: String,
     description: Option<String>,
     public: bool,
+    icon: String,
     id: &SlimUser,
 ) -> Result<i32, Error> {
     use super::schema::{games, user_games};
+    // INFO: Data (including icon, …) is seen as validated/ trusted at this point
 
     let new_description = match description {
         Some(content) => Some(zero_trim(&content)),
@@ -31,6 +34,7 @@ pub fn create_game(
         description: new_description,
         user_id: id.id,
         public,
+        icon: zero_trim(&icon),
         state: 0, // see state mapping in server/db/models
     };
 
@@ -60,20 +64,18 @@ pub fn check_game(conn: &PgConnection, id: i32) -> Result<i32, Error> {
         .first::<i32>(conn)
 }
 
-/*
-TODO: Fix this caching at some point
 #[cached(
-    convert = "{ id }",
+    convert = "{ gid }",
     type = "TimedCache<i32, (Game, Vec<(Uuid, String)>)>",
     result = true,
+    key = "i32",
     create = "{ TimedCache::with_lifespan(30) }"
 )]
-*/
-pub fn get_game(conn: &PgConnection, id: i32) -> Result<(Game, Vec<(Uuid, String)>), Error> {
+pub fn get_game(conn: &PgConnection, gid: i32) -> Result<(Game, Vec<(Uuid, String)>), Error> {
     use super::schema::games;
     use super::schema::users::{dsl::id as uid, dsl::username};
 
-    let game = games::table.find(id).first::<Game>(conn).optional()?;
+    let game = games::table.find(gid).first::<Game>(conn).optional()?;
 
     match game {
         Some(game) => {
@@ -235,21 +237,28 @@ pub fn get_user_game(conn: &PgConnection, uid: Uuid) -> Result<Option<i32>, Erro
     }
 }
 
-pub fn leave_game(conn: &PgConnection, uid: Uuid) -> Result<usize, Error> {
+pub fn leave_game(conn: &PgConnection, uid: Uuid) -> Result<(), Error> {
     use super::schema::game_moves::{self, dsl::*};
+    use super::schema::user_games::{self, dsl::id as user_game_id, dsl::user_id};
 
-    let subquery = game_moves::table
+    /*
+    -> get latest game id
+        -> get latest user_games from all players -> take game_id and index
+    -> get latest figure_id
+        -> calculate figure ids -> remove all entries matching figure ids and game_id
+    -> Return
+    */
+
+    let user_game = user_games::table
         .filter(user_id.eq(&uid))
-        .distinct_on(id)
-        .select(id)
-        .into_boxed();
+        .select(user_games::all_columns)
+        .order_by(user_game_id)
+        .first::<UserGame>(conn)?;
 
-    delete(
-        game_moves::table
-            .filter(user_id.eq(&uid))
-            .filter(id.ne_all(subquery)),
-    )
-    .execute(conn)
+    delete(user_games::table.filter(user_game_id.eq(user_game.id))).execute(conn)?;
+    delete(game_moves::table.filter(game_id.eq(user_game.game_id))).execute(conn)?;
+
+    Ok(())
 }
 
 pub fn join_game(conn: &PgConnection, user_id: Uuid, game_id: i32) -> Result<(), Error> {
@@ -264,9 +273,6 @@ pub fn join_game(conn: &PgConnection, user_id: Uuid, game_id: i32) -> Result<(),
     Ok(())
 }
 
-// WARNING: This can't use Result because of cached traits
-// To resolve the key limitations of this store the 'fake_key' is used
-// This may just panic a whole thread. DON'T USE THIS AGAINST AN UNKNOWN DATABASE
 #[cached(
     type = "TimedCache<String, Vec<(i32, String)>>",
     result = true,
@@ -302,36 +308,60 @@ pub fn create_toast(
     Ok(())
 }
 
-pub fn fetch_latest_move(
-    conn: &PgConnection,
-    gid: i32,
-    uid: Uuid,
-) -> Result<Option<Vec<i16>>, Error> {
+pub fn fetch_latest_move(conn: &PgConnection, gid: i32, uid: Uuid, fid: i16) -> Result<MOVE, Error> {
     use super::schema::game_moves::dsl::*;
 
-    game_moves
-        .select(umove)
+    // the database will always return arrays with the size of 3 -> two arrays size 6
+    let mut action = game_moves
+        .select((src, dest, figure))
         .limit(1)
         .order(id.desc())
         .filter(user_id.eq(uid))
         .filter(game_id.eq(gid))
-        .first::<Vec<i16>>(conn)
-        .optional()
+        .filter(figure.eq(fid))
+        .first::<(Vec<i16>, Vec<i16>, i16)>(conn)?;
+
+    // create new array to hold retrieved values
+    let mut locations: [i16; 6] = [0_i16; 6];
+    let mut index: usize = 0;
+
+    // fill new array with content from database arrays
+    action.0.drain(0..3).for_each(|location| {
+        locations[index] = location;
+        index += 1;
+    });
+
+    action.1.drain(3..6).for_each(|location| {
+        locations[index] = location;
+        index += 1;
+    });
+
+    Ok((
+        locations,
+        action
+            .2
+            .try_into()
+            .expect("Corrupted Database entry for figure id"),
+    ))
 }
 
 pub fn make_new_move(
     conn: &PgConnection,
-    uid: Uuid,
-    gid: i32,
-    action: AMOVE,
+    user_id: Uuid,
+    game_id: i32,
+    action: MOVE,
 ) -> Result<usize, Error> {
     use super::schema::game_moves;
 
+    let (src, dest) = action.0.split_at(2);
+
     insert_into(game_moves::table)
         .values(NewGameMove {
-            game_id: gid,
-            user_id: uid,
-            umove: action.to_vec(),
+            game_id,
+            src,
+            dest,
+            user_id,
+            figure: action.1.into(),
         })
         .execute(conn)
 }

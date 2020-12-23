@@ -32,12 +32,21 @@ if ! command -v diesel &>/dev/null; then
     echo "You need the diesel cli. (use: cargo install diesel_cli --no-default-features --features postgres)"
     exit 1
 elif ! command -v grep &>/dev/null; then
-    echo "You need GNU grep for using this script"
+    echo "You need GNU grep for using this application"
     exit 1
 fi
 
 # Start setup
 echo "Starting with setup"
+
+echo "Descending into server/static and start local js toolchain installation"
+cd server/static
+
+TOOL
+
+echo "Done installing."
+
+cd ../../
 
 echo "Descending into server and start building"
 
